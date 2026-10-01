@@ -7,6 +7,7 @@ var CLS = { 'แจ้งใหม่':['s-new','p-new','#b42318'], 'รับ�
 // สัญลักษณ์ประจำสถานะ (อักขระมาตรฐาน แสดงเหมือนกันทุกเครื่อง) ใช้คู่กับสีเสมอ เพื่อคนตาบอดสีหรือจอกลางแดด
 var SYM = { 'แจ้งใหม่':'●', 'รับเรื่องแล้ว':'◔', 'กำลังดำเนินการ':'◑', 'เสร็จสิ้น':'✓', 'ปิดงาน/ไม่พบปัญหา':'○', 'แจ้งเท็จ':'✕' };
 var MAP_CENTER = (window.ORG && ORG.mapCenter) || [18.582125, 98.952782];
+var HOME = (window.ORG && ORG.navFrom) || MAP_CENTER;   // ที่ทำการ อบต. = จุดเริ่มนำทาง (แสดงหมุดบนแผนที่เสมอ)
 var SLA_DAYS = (window.ORG && ORG.sla_days) || 10;
 
 // ไอคอน SVG inline (Tabler Icons, MIT) ไม่ต้องโหลดไลบรารี
@@ -127,13 +128,35 @@ function topbarHtml(title, extra){
 var Board = { data:[], map:null, markers:null, filter:{status:'',moo:'',q:'',mine:false}, onBlock:null };
 
 Board.initMap = function(){
-  Board.map = L.map('map').setView(MAP_CENTER, 15);
+  Board.map = L.map('map').setView(HOME, 15);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(Board.map);
+  // หมุดที่ทำการ อบต. (จุดเริ่มนำทาง) — อยู่บนแผนที่ตลอด ไม่ถูกล้างตอนกรองงาน
+  var homeIcon = L.divIcon({ className:'', iconSize:[38,46], iconAnchor:[19,44], popupAnchor:[0,-40],
+    html:'<div style="position:relative;width:38px;height:46px"><svg viewBox="0 0 38 46" width="38" height="46" aria-hidden="true">'+
+      '<path d="M19 45C19 45 3 28.5 3 18a16 16 0 1 1 32 0C35 28.5 19 45 19 45z" fill="#1e4e9a" stroke="#fff" stroke-width="2.5"/>'+
+      '<path d="M11 19.5l8-7 8 7M13.5 17.5v8h11v-8M17 25.5v-4.5h4v4.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' });
+  L.marker(HOME, { icon:homeIcon, zIndexOffset:1000, title:'ที่ทำการ '+ORG.short, keyboard:true }).addTo(Board.map)
+    .bindPopup('<b class="text-base">ที่ทำการ '+esc(ORG.short)+'</b><br><span class="text-sm text-muted">จุดเริ่มนำทางของช่าง</span>');
+  // ปุ่มกลับไปที่ อบต. (ใต้ปุ่มซูม)
+  var Home = L.Control.extend({ options:{ position:'topleft' }, onAdd:function(){
+    var b = L.DomUtil.create('a','leaflet-bar'); b.href='#'; b.title='กลับไปที่ '+ORG.short; b.setAttribute('role','button'); b.setAttribute('aria-label', b.title);
+    b.style.cssText='display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:#fff;color:#1e4e9a';
+    b.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg>';
+    L.DomEvent.on(b,'click',function(e){ L.DomEvent.preventDefault(e); L.DomEvent.stopPropagation(e); Board.map.setView(HOME,15); });
+    return b; } });
+  Board.map.addControl(new Home());
   Board.markers = L.layerGroup().addTo(Board.map);
   // Tailwind (CDN) ใส่สไตล์หลัง Leaflet วัดขนาดกล่องไปแล้ว → วัดใหม่อีกรอบ ไม่งั้นแผนที่/หมุดเพี้ยน
-  [300, 1000, 2500].forEach(function(ms){ setTimeout(function(){ Board.map.invalidateSize(); if(Board._pts&&Board._pts.length) Board.map.fitBounds(Board._pts,{padding:[30,30],maxZoom:17}); }, ms); });
+  [300, 1000, 2500].forEach(function(ms){ setTimeout(function(){ Board.map.invalidateSize(); Board.fit(); }, ms); });
   window.addEventListener('resize', function(){ Board.map.invalidateSize(); });
 };
+/** จัดมุมมองให้เห็นทั้ง อบต. และงานที่แสดงอยู่ */
+Board.fit = function(){
+  var pts = Board._pts || [];
+  if (pts.length) Board.map.fitBounds(pts.concat([HOME]), {padding:[30,30], maxZoom:17}); else Board.map.setView(HOME, 15);
+};
+/** ระยะทางเส้นตรงจาก อบต. (ประมาณ) */
+function fromHome(lat,lng){ var m=L.latLng(HOME).distanceTo([+lat,+lng]); return m<1000? Math.round(m/10)*10+' ม.' : (m/1000).toFixed(1)+' กม.'; }
 Board.load = async function(){
   Board.data = await api('/api/reports') || [];
   var sel=document.getElementById('f_moo'), cur=sel.value, moos={};
@@ -175,12 +198,13 @@ Board.render = function(){
       var ov=slaOver(r);
       var m=L.circleMarker([+r.lat,+r.lng],{radius:ov?12:10,color:ov?'#f2b632':'#fff',weight:ov?4:2,fillColor:c,fillOpacity:.95});
       m.bindPopup('<b class="text-base">เสา '+esc(r.pole_id)+'</b> '+pill(r.status)+(ov?' <span class="'+T.pill+' bg-accent-soft text-accent-dark border border-accent">เกิน SLA '+ov+' วัน</span>':'')+'<br>'+esc(r.detail)+
-        '<br><a class="'+T.btnSm+' bg-brand text-white mt-1.5" style="color:#fff" href="'+gmaps(r.lat,r.lng)+'" target="_blank" rel="noopener">'+ico('nav')+'นำทาง Google Maps</a>');
+        '<br><span class="text-xs text-muted">ห่างจาก '+esc(ORG.short)+' ~'+fromHome(r.lat,r.lng)+' (เส้นตรง)</span>'+
+        '<br><a class="'+T.btnSm+' bg-brand text-white mt-1.5" style="color:#fff" href="'+gmaps(r.lat,r.lng)+'" target="_blank" rel="noopener">'+ico('nav')+'นำทางจาก '+esc(ORG.short)+'</a>');
       Board.markers.addLayer(m); pts.push([+r.lat,+r.lng]);
     }
   });
   Board._pts = pts;
-  if(pts.length) Board.map.fitBounds(pts,{padding:[30,30],maxZoom:17}); else Board.map.setView(MAP_CENTER,15);
+  Board.fit();
 
   document.getElementById('list').innerHTML = rows.map(function(r){
     var c=CLS[r.status]||['','',''], id=r.report_id.replace(/[^A-Za-z0-9]/g,''), ov=slaOver(r), isOpen=OPEN_STATUS.indexOf(r.status)>=0;
@@ -214,7 +238,7 @@ Board.render = function(){
 Board.view=function(v){
   var b=document.getElementById('board'); b.classList.toggle('board-map',v==='map'); b.classList.toggle('board-list',v==='list');
   document.querySelectorAll('#viewToggle button').forEach(function(x,i){ var on=(i===0)===(v==='map'); x.className='flex-1 py-2 inline-flex items-center justify-center gap-1.5 '+(on?'bg-brand text-white':'bg-white text-muted'); });
-  if(v==='map') setTimeout(function(){ Board.map.invalidateSize(); if(Board._pts&&Board._pts.length) Board.map.fitBounds(Board._pts,{padding:[30,30],maxZoom:17}); },50);
+  if(v==='map') setTimeout(function(){ Board.map.invalidateSize(); Board.fit(); },50);
 };
 Board.setStatus=function(v){ document.getElementById('f_status').value=v; Board.render(); };
 Board.save = async function(rid,id){
