@@ -2369,9 +2369,9 @@ var qrcode = function() {
 <body>
 <div class="ctl">
   <h1>สร้าง QR สติกเกอร์เสาไฟ อบต.แม่ก๊า</h1>
-  <p>มีข้อมูลเสา 408 ต้นและลิงก์เว็บแอปใส่ไว้ให้แล้ว กรอก <b>QR_SECRET</b> ให้ตรงกับที่ตั้งใน Apps Script แล้วกด "สร้าง QR" รหัสลับใช้คำนวณในเครื่องนี้เท่านั้น ไม่ถูกส่งไปที่ไหน</p>
-  <label for="base">ลิงก์เว็บแอป
-    <input id="base" value="https://script.google.com/macros/s/AKfycbwl8TzuH3flz49GFlNXmb0HzN66r42C-C5NjAm2MK0g3oJfCU9ejQkvedxkX1AlDvecSg/exec">
+  <p>มีข้อมูลเสา 408 ต้นใส่ไว้ให้แล้ว ใส่ลิงก์เว็บ และกรอก <b>QR_SECRET</b> ให้ตรงกับที่ตั้งใน Vercel (หรือ Apps Script) แล้วกด "สร้าง QR" รหัสลับใช้คำนวณในเครื่องนี้เท่านั้น ไม่ถูกส่งไปที่ไหน</p>
+  <label for="base">ลิงก์เว็บที่ QR จะพาไป (Vercel หรือ Apps Script)
+    <input id="base" inputmode="url" placeholder="https://ชื่อโปรเจกต์.vercel.app" value="https://test-saofi-qr.vercel.app">
   </label>
   <label for="secret">QR_SECRET (ตัวพิมพ์เล็ก-ใหญ่ต้องตรงกัน)
     <input id="secret" type="password" autocomplete="off" placeholder="ถ้าไม่ได้ตั้ง QR_SECRET ปล่อยว่าง">
@@ -2450,7 +2450,12 @@ async function sig(secret,pole){
 
 async function gen(){
   var base=document.getElementById('base').value.trim();
-  if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(base)){say('ลิงก์เว็บแอปต้องขึ้นต้นด้วย https://script.google.com/macros/s/ และลงท้ายด้วย /exec',true);return;}
+  if(/script\.google\.com/.test(base)){
+    if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(base)){say('ลิงก์ Apps Script ต้องลงท้ายด้วย /exec',true);return;}
+  } else {
+    if(!/^https:\/\/[^\s\/?#]+\.[^\s\/?#]+(\/[^\s?#]*)?$/.test(base)){say('ลิงก์เว็บต้องขึ้นต้นด้วย https:// เช่น https://ชื่อโปรเจกต์.vercel.app',true);return;}
+    base=base.replace(/\/+$/,'')+'/';
+  }
   if(!window.crypto||!crypto.subtle){say('เบราว์เซอร์นี้คำนวณลายเซ็นไม่ได้ ลองเปิดไฟล์ด้วย Google Chrome',true);return;}
   var secret=document.getElementById('secret').value.trim();
   say('กำลังสร้าง…');
