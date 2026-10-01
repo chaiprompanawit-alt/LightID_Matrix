@@ -1,6 +1,6 @@
 // Vercel Cron เรียกทุกวัน 10:15 น. (เวลาไทย) → แตะฐานข้อมูล กัน Supabase Free หยุดโปรเจกต์เมื่อไม่มีการใช้งาน 7 วัน
 // เปิดเองในเบราว์เซอร์ได้ เพื่อตรวจว่าเว็บต่อฐานข้อมูลได้ไหม (แสดงแค่ชื่อโฮสต์ ไม่แสดงคีย์)
-const { sb } = require('../lib/db');
+const { sb, supabaseOrigin } = require('../lib/db');
 
 function hostCheck(raw) {
   const url = String(raw || '');
@@ -16,15 +16,16 @@ function hostCheck(raw) {
 
 module.exports = async (req, res) => {
   const chk = hostCheck(process.env.SUPABASE_URL);
+  const origin = supabaseOrigin(process.env.SUPABASE_URL);
   const { count, error } = await sb().from('poles').select('pole_id', { count: 'exact', head: true });
   let netError = null;
-  if (error && chk.host) {
-    try { await fetch('https://' + chk.host + '/rest/v1/', { signal: AbortSignal.timeout(5000) }); }
+  if (error && origin) {
+    try { await fetch(origin + '/rest/v1/', { signal: AbortSignal.timeout(5000) }); }
     catch (e) { netError = (e.cause && (e.cause.code || e.cause.message)) || e.message; }
   }
   if (error) console.error('ping failed', error, netError);
   res.status(error ? 500 : 200).json({
     ok: !error, poles: count, at: new Date().toISOString(),
-    supabase_host: chk.host, hint: chk.hint, error: error && error.message, network: netError
+    supabase_host: origin ? new URL(origin).hostname : null, hint: chk.hint && (chk.hint + ' (ระบบปรับให้อัตโนมัติแล้ว)'), error: error && error.message, network: netError
   });
 };

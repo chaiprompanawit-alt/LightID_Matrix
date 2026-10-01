@@ -11,10 +11,22 @@ const MIN_SECONDS_TO_SUBMIT = 3;
 const SLA_WORKING_DAYS = 10;
 const HOTLINE = process.env.HOTLINE || '0-5383-7432';  // เบอร์ อบต.แม่ก๊า
 
+/** ทำ SUPABASE_URL ให้เหลือแค่ https://<ref>.supabase.co (ตัด /rest/v1, ช่องว่าง, "db." ที่มักคัดลอกติดมา) */
+function supabaseOrigin(raw) {
+  let s = String(raw || '').trim();
+  if (!s) return '';
+  if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
+  try {
+    const u = new URL(s);
+    const host = u.hostname.replace(/^db\.(?=[a-z0-9]+\.supabase\.co$)/, '');
+    return u.protocol + '//' + host + (u.port ? ':' + u.port : '');
+  } catch { return s; }
+}
+
 let _sb;
 function sb() {
   if (!_sb) {
-    const url = (process.env.SUPABASE_URL || '').trim(), key = (process.env.SUPABASE_SERVICE_KEY || '').trim();
+    const url = supabaseOrigin(process.env.SUPABASE_URL), key = (process.env.SUPABASE_SERVICE_KEY || '').trim();
     if (!url || !key) {
       // ทดลองในเครื่อง (npm run dev) โดยยังไม่มี Supabase → ใช้ฐานข้อมูลจำลอง; บน Vercel จริงต้องตั้งค่าเสมอ
       if (process.env.VERCEL) throw new Error('ยังไม่ได้ตั้ง SUPABASE_URL / SUPABASE_SERVICE_KEY ใน Environment Variables');
@@ -63,6 +75,6 @@ function body(req) {
   try { return JSON.parse(req.body || '{}'); } catch { return {}; }
 }
 
-module.exports = { sb, STATUS_LIST, OPEN_STATUS, DONE_STATUS, MAX_REPORTS_PER_PHONE_PER_DAY, MIN_SECONDS_TO_SUBMIT,
+module.exports = { sb, supabaseOrigin, STATUS_LIST, OPEN_STATUS, DONE_STATUS, MAX_REPORTS_PER_PHONE_PER_DAY, MIN_SECONDS_TO_SUBMIT,
   SLA_WORKING_DAYS, HOTLINE, poleSig, qrValid, sessionOf, requireRole, bkk, bkkDayKey, bkkStartOfToday, newReportId,
   clean, digits, mooOf, body };
