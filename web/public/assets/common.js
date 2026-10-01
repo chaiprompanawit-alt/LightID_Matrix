@@ -52,7 +52,10 @@ function esc(s){ return String(s==null?'':s).replace(/[<>&"]/g,function(c){retur
 function mooOf(id){ var m=String(id||'').split('/'); return m.length>1?m[0]:''; }
 function fmtDT(iso){ if(!iso) return ''; return new Date(iso).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); }
 function fmtD(iso){ if(!iso) return ''; return new Date(iso).toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric'}); }
-function gmaps(lat,lng){ return 'https://www.google.com/maps/dir/?api=1&destination='+lat+','+lng; }   // เปิดโหมดนำทางทันที
+function gmaps(lat,lng){   // เปิดโหมดนำทางทันที เริ่มจาก อบต. (ORG.navFrom) ถ้าตั้งไว้ ไม่งั้นเริ่มจาก GPS มือถือ
+  var o = window.ORG && ORG.navFrom;
+  return 'https://www.google.com/maps/dir/?api=1'+(o?'&origin='+o[0]+','+o[1]:'')+'&destination='+lat+','+lng;
+}
 function ago(iso){ var h=(Date.now()-new Date(iso))/36e5; if(h<1) return Math.round(h*60)+' นาที'; if(h<48) return Math.round(h)+' ชม.'; return Math.round(h/24)+' วัน'; }
 
 /* ---------- PWA: ติดตั้งเป็นแอปบนมือถือ/แท็บเล็ต/คอม ---------- */

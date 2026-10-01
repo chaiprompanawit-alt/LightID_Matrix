@@ -42,14 +42,14 @@ cd web && npm install && npm run dev
    - `ADMIN_TOKEN` = รหัสผ่านบัญชี `admin` หลัก (ยาว เดายาก)
    - `SESSION_SECRET` = สุ่มตัวอักษรยาว ๆ
    - `QR_SECRET` = ต้องตรงกับที่ใส่ใน `docs/qr_generator.html`
-   - (ไม่บังคับ) `RESEND_API_KEY`, `NOTIFY_EMAIL`, `NOTIFY_FROM`, `HOTLINE`, `PUBLIC_URL`
+   - (ไม่บังคับ) `RESEND_API_KEY`, `NOTIFY_EMAIL`, `NOTIFY_FROM`, `HOTLINE`, `PUBLIC_URL`, `QR_BASE_URL` (โดเมนของตัวเองที่ QR จะพาไป ถ้าไม่ตั้งใช้โดเมน production ของ Vercel)
 3. **Deploy** → ได้ URL เช่น `https://xxx.vercel.app`
 
 ### 3) ตั้งต้นระบบ
 1. เปิด `/admin` → ล็อกอิน `admin` + `ADMIN_TOKEN`
 2. แท็บ **👥 ผู้ใช้** → สร้างบัญชีช่างแต่ละคน (สิทธิ์ "ช่าง") แจ้งรหัสให้ช่าง ให้เปลี่ยนเองที่หน้า `/tech`
 3. แท็บ **🗼 เสาไฟ** → วางข้อมูลจาก Excel (`pole_id, zone, address, lat, lng, note`) → นำเข้า
-4. เปิด `docs/qr_generator.html` → ใส่ URL เว็บ (ไม่มี `/` ท้าย) + `QR_SECRET` → สร้าง QR → พิมพ์
+4. แท็บ **สติกเกอร์ QR** → เลือกหมู่ → **ดาวน์โหลด PDF** (A4 หน้าละ 8 ดวง พิมพ์ขนาดจริง 100%) — ลายเซ็นคำนวณที่เซิร์ฟเวอร์จาก `QR_SECRET` ไม่ต้องกรอกเอง ใช้ได้ทุกเครื่องที่ล็อกอินแอดมิน (สำรองแบบออฟไลน์: `docs/qr_maeka.html`)
 5. ทดสอบ: สแกน QR เสา 1/1 (เสาทดลอง) → แจ้ง → เปิด `/tech` กด 🧭 นำทาง → ต้องเปิด Google Maps ไปที่ 18.582125, 98.952782
 
 ## ระบบล็อกอิน
@@ -64,5 +64,6 @@ cd web && npm install && npm run dev
 - **Supabase Free หลับถ้าไม่ใช้ 7 วัน** → `vercel.json` มี cron เรียก `/api/ping` ทุกวัน 10:15 น. แล้ว (Vercel Hobby รองรับ cron วันละครั้ง) — ทดสอบเองได้โดยเปิด `/api/ping` ต้องเห็น `"ok":true`
 - **Vercel Hobby ห้ามใช้เชิงพาณิชย์** → วันที่ หจก. รับเงิน ให้ย้ายไป Vercel Pro หรือ Cloudflare Pages (โค้ดส่วน `api/` ต้องปรับเป็น Pages Functions)
 - โลโก้: วางไฟล์ที่ `public/assets/logo.png` จะขึ้นหัวหน้าชาวบ้านอัตโนมัติ
-- เปลี่ยนไปใช้กับ อบต. อื่น: แก้ `public/assets/config.js` + สีใน `@theme` ของแต่ละหน้า + `HOTLINE`
+- เปลี่ยนไปใช้กับ อบต. อื่น: แก้ `public/assets/config.js` (ชื่อ, เบอร์, `mapCenter`, `navFrom` = จุดเริ่มนำทางของช่าง) + สีใน `@theme` ของแต่ละหน้า + `HOTLINE`
+- ปุ่ม 🧭 นำทาง เริ่มเส้นทางจากที่ทำการ อบต. (`ORG.navFrom`) เสมอ — ลบ `navFrom` ถ้าอยากให้เริ่มจาก GPS มือถือ
 - SLA ในรายงานนับวันจันทร์–ศุกร์ ยังไม่หักวันหยุดนักขัตฤกษ์

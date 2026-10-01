@@ -1,10 +1,23 @@
 // ข้อมูลเสา — GET รายการทั้งหมด (ช่าง/แอดมิน) / POST {rows:[{pole_id,zone,address,lat,lng,note}]} upsert เป็นชุด (แอดมิน)
-const { sb, requireRole, body, clean } = require('../lib/db');
+const { sb, requireRole, body, clean, poleSig } = require('../lib/db');
+
+/** เว็บที่ QR จะพาไป: QR_BASE_URL (โดเมนของตัวเอง) > โดเมน production ของ Vercel > โดเมนที่เปิดอยู่ */
+function qrBase(req) {
+  const set = String(process.env.QR_BASE_URL || '').trim().replace(/\/+$/, '');
+  if (set) return set;
+  const host = process.env.VERCEL_PROJECT_PRODUCTION_URL || req.headers['x-forwarded-host'] || req.headers.host;
+  return (host.startsWith('localhost') ? 'http://' : 'https://') + host;
+}
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
     if (!requireRole(req, res, ['admin', 'tech'])) return;
     const { data, error } = await sb().from('poles').select('*').order('pole_id').limit(5000);
-    return error ? res.status(500).json({ error: error.message }) : res.json(data);
+    if (error) return res.status(500).json({ error: error.message });
+    if (req.query.qr) {   // หน้าสร้างสติกเกอร์: ส่งลายเซ็น k ของแต่ละต้น (QR_SECRET ไม่ออกจากเซิร์ฟเวอร์)
+      if (!requireRole(req, res, ['admin'])) return;
+      return res.json({ base: qrBase(req) + '/', signed: !!poleSig('x'), rows: data.map(p => ({ pole_id: p.pole_id, k: poleSig(p.pole_id) })) });
+    }
+    return res.json(data);
   }
   if (!requireRole(req, res, ['admin'])) return;
   const rows = (body(req).rows || []).map(r => ({

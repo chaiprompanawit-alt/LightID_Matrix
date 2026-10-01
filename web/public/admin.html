@@ -29,8 +29,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="assets/common.js"></script>
+<script src="assets/qr.js"></script>
 <script>
-var TABS = [['board','ภาพรวมงาน'],['report','รายงาน'],['poles','เสาไฟ'],['block','บัญชีดำ'],['users','ผู้ใช้']];
+var TABS = [['board','ภาพรวมงาน'],['report','รายงาน'],['poles','เสาไฟ'],['qr','สติกเกอร์ QR'],['block','บัญชีดำ'],['users','ผู้ใช้']];
 var TH = 'px-3 py-2 text-left font-bold text-muted text-sm bg-paper border-b-2 border-line whitespace-nowrap', TD = 'px-3 py-2 border-b border-line align-top';
 var charts = {};
 
@@ -39,8 +40,8 @@ function start(){
   if (me.role !== 'admin') { document.getElementById('root').innerHTML = '<div class="max-w-sm mx-auto mt-14 '+T.card+' text-center"><div class="mx-auto w-14 h-14 rounded-full bg-accent-soft text-accent-dark flex items-center justify-center">'+ico('lock')+'</div><p class="mt-3 font-semibold">บัญชีนี้เป็นสิทธิ์ช่าง ไม่สามารถเข้าหน้าแอดมินได้</p><a href="/tech" class="'+T.btn+' mt-3">ไปหน้าช่าง</a><br><button class="text-sm text-muted mt-3 underline" onclick="Auth.clear()">ออกจากระบบ</button></div>'; return; }
   document.getElementById('root').innerHTML =
     topbarHtml('แอดมิน งานซ่อมไฟฟ้า', '<a href="/tech" class="bg-white/15 hover:bg-white/25 rounded-[10px] px-2.5 py-1 text-white no-underline">หน้าช่าง</a>')+
-    '<nav class="noprint flex gap-1 px-3 bg-white border-b border-line sticky z-[999]" id="tabs" style="top:var(--topbar-h,56px)">'+TABS.map(function(t){
-      return '<button data-t="'+t[0]+'" onclick="show(\''+t[0]+'\')" class="px-3.5 py-2.5 text-base font-semibold text-muted border-b-[3px] border-transparent cursor-pointer">'+t[1]+'</button>';}).join('')+'</nav>'+
+    '<nav class="noprint flex gap-1 px-3 overflow-x-auto bg-white border-b border-line sticky z-[999]" id="tabs" style="top:var(--topbar-h,56px)">'+TABS.map(function(t){
+      return '<button data-t="'+t[0]+'" onclick="show(\''+t[0]+'\')" class="px-3.5 py-2.5 text-base font-semibold whitespace-nowrap text-muted border-b-[3px] border-transparent cursor-pointer">'+t[1]+'</button>';}).join('')+'</nav>'+
     '<main class="max-w-7xl mx-auto">'+TABS.map(function(t){ return '<section id="tab_'+t[0]+'" class="hidden"></section>'; }).join('')+'</main>';
   // แถบแท็บเกาะใต้ header: วัดความสูง header จริง (Tailwind CDN ใส่สไตล์ทีหลัง จึงต้องวัดซ้ำเมื่อขนาดเปลี่ยน)
   var hd=document.querySelector('header.sticky'); if(hd){ var setH=function(){ document.documentElement.style.setProperty('--topbar-h', hd.offsetHeight+'px'); }; setH(); if(window.ResizeObserver) new ResizeObserver(setH).observe(hd); else setTimeout(setH,1500); }
@@ -56,6 +57,7 @@ function show(t){
   if (t==='board' && Board.map) setTimeout(function(){ Board.map.invalidateSize(); }, 50);
   if (t==='report') initReport();
   if (t==='poles') loadPoles();
+  if (t==='qr') QR.init(document.getElementById('tab_qr'));
   if (t==='block') loadBlock();
   if (t==='users') loadUsers();
 }
