@@ -142,7 +142,7 @@ Board.initMap = function(){
     var b = L.DomUtil.create('a','leaflet-bar'); b.href='#'; b.title='กลับไปที่ '+ORG.short; b.setAttribute('role','button'); b.setAttribute('aria-label', b.title);
     b.style.cssText='display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:#fff;color:#1e4e9a';
     b.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg>';
-    L.DomEvent.on(b,'click',function(e){ L.DomEvent.preventDefault(e); L.DomEvent.stopPropagation(e); Board.map.setView(HOME,15); });
+    L.DomEvent.on(b,'click',function(e){ L.DomEvent.preventDefault(e); L.DomEvent.stopPropagation(e); Board.fit(); });
     return b; } });
   Board.map.addControl(new Home());
   Board.markers = L.layerGroup().addTo(Board.map);
@@ -150,10 +150,13 @@ Board.initMap = function(){
   [300, 1000, 2500].forEach(function(ms){ setTimeout(function(){ Board.map.invalidateSize(); Board.fit(); }, ms); });
   window.addEventListener('resize', function(){ Board.map.invalidateSize(); });
 };
-/** จัดมุมมองให้เห็นทั้ง อบต. และงานที่แสดงอยู่ */
+/** อบต. อยู่กลางจอเสมอ แล้วซูมออกพอให้เห็นงานทุกจุด (ใส่จุดสะท้อนรอบ อบต. ให้กรอบสมมาตร) */
 Board.fit = function(){
   var pts = Board._pts || [];
-  if (pts.length) Board.map.fitBounds(pts.concat([HOME]), {padding:[30,30], maxZoom:17}); else Board.map.setView(HOME, 15);
+  if (!pts.length) { Board.map.setView(HOME, 15); return; }
+  var b = [HOME];
+  pts.forEach(function(p){ b.push(p, [2*HOME[0]-p[0], 2*HOME[1]-p[1]]); });
+  Board.map.fitBounds(b, {padding:[30,30], maxZoom:16});
 };
 /** ระยะทางเส้นตรงจาก อบต. (ประมาณ) */
 function fromHome(lat,lng){ var m=L.latLng(HOME).distanceTo([+lat,+lng]); return m<1000? Math.round(m/10)*10+' ม.' : (m/1000).toFixed(1)+' กม.'; }
