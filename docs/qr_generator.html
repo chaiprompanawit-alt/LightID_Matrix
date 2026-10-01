@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>สร้าง QR รายเสา - ทต.ป่าสัก</title>
+<title>สร้าง QR รายเสา - อบต.แม่ก๊า</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   body{font-family:"Sarabun",sans-serif;background:#f4f2ee;margin:0;padding:16px;color:#2b2620}
@@ -123,7 +123,7 @@ async function gen(){
       card.innerHTML='<div class="num">'+it.p+'</div><div class="moo">หมู่ '+moo+' ต้นที่ '+it.p.split('/')[1]+'</div>';
       var q=document.createElement('div'); card.appendChild(q);
       new QRCode(q,{text:it.url,width:130,height:130,correctLevel:QRCode.CorrectLevel.M});
-      var cap=document.createElement('div'); cap.className='muted'; cap.textContent='แจ้งซ่อมไฟฟ้า ทต.ป่าสัก'; card.appendChild(cap);
+      var cap=document.createElement('div'); cap.className='muted'; cap.textContent='แจ้งซ่อมไฟฟ้า อบต.แม่ก๊า'; card.appendChild(cap);
       g.appendChild(card);
     });
   });
