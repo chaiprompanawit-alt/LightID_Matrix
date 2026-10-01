@@ -2452,7 +2452,7 @@ async function gen(){
   var base=document.getElementById('base').value.trim();
   if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(base)){say('ลิงก์เว็บแอปต้องขึ้นต้นด้วย https://script.google.com/macros/s/ และลงท้ายด้วย /exec',true);return;}
   if(!window.crypto||!crypto.subtle){say('เบราว์เซอร์นี้คำนวณลายเซ็นไม่ได้ ลองเปิดไฟล์ด้วย Google Chrome',true);return;}
-  var secret=document.getElementById('secret').value;
+  var secret=document.getElementById('secret').value.trim();
   say('กำลังสร้าง…');
   var out=document.getElementById('out'); out.innerHTML=''; LAST=[];
   for(var mi=0;mi<MOOS.length;mi++){

@@ -38,7 +38,7 @@ function prop_(key) { return PropertiesService.getScriptProperties().getProperty
  * ทำให้คนพิมพ์ URL มั่วเสาอื่นไม่ได้ ต้องสแกนจากสติกเกอร์จริง (docs/qr_generator.html สร้าง k ให้เอง)
  */
 function poleSig_(poleId) {
-  var secret = prop_('QR_SECRET');
+  var secret = prop_('QR_SECRET').trim(); // กันช่องว่าง/ขึ้นบรรทัดที่ติดมาตอนวางรหัส
   if (!secret) return '';
   var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, secret + '|' + poleId, Utilities.Charset.UTF_8);
   return bytes.slice(0, 3).map(function (b) { return ('0' + ((b + 256) % 256).toString(16)).slice(-2); }).join('');
@@ -47,6 +47,20 @@ function qrValid_(poleId, k) {
   var want = poleSig_(poleId);
   return !want || want === String(k || '').toLowerCase();
 }
+/**
+ * ▶ ตรวจลายเซ็น QR: เลือก testQrLink แล้วกด Run → ดูลิงก์ใน "บันทึกการดำเนินการ"
+ * เปิดลิงก์นั้นด้วยมือถือ ถ้าได้หน้าแจ้งซ่อม แต่ QR ที่พิมพ์ขึ้น "ลิงก์ไม่ถูกต้อง"
+ * แปลว่า QR_SECRET ที่กรอกในหน้าสร้าง QR ไม่ตรงกับ Script Properties (เทียบค่า k ท้ายลิงก์)
+ */
+function testQrLink() {
+  var pole = '6/1';
+  var k = poleSig_(pole);
+  var url = ScriptApp.getService().getUrl() + '?pole=' + encodeURIComponent(pole) + (k ? '&k=' + k : '');
+  Logger.log(k ? 'QR_SECRET ตั้งไว้แล้ว ยาว ' + prop_('QR_SECRET').trim().length + ' ตัวอักษร' : 'ยังไม่ได้ตั้ง QR_SECRET (ไม่ต้องมี k)');
+  Logger.log('ลิงก์ที่ถูกต้องของเสา ' + pole + ': ' + url);
+  Logger.log('k ของเสา ' + pole + ' = ' + (k || '(ไม่มี)'));
+}
+
 function adminToken_() {
   var t = prop_('ADMIN_TOKEN');
   if (!t) throw new Error('ยังไม่ได้ตั้ง ADMIN_TOKEN ใน Script Properties (ดู README ข้อ 2.4)');
@@ -153,10 +167,10 @@ function submitReport(payload) {
   // (3) ลายเซ็น QR (ถ้าเปิดใช้)
   if (poleId && !qrValid_(poleId, payload.k)) throw new Error('ลิงก์ไม่ถูกต้อง กรุณาสแกน QR จากสติกเกอร์บนเสาอีกครั้ง');
   // (4) เบอร์ในบัญชีดำ
-  if (isBlocked_(phone)) throw new Error('ไม่สามารถรับแจ้งจากหมายเลขนี้ได้ กรุณาติดต่อ 053-537-478');
+  if (isBlocked_(phone)) throw new Error('ไม่สามารถรับแจ้งจากหมายเลขนี้ได้ กรุณาติดต่อ 0-5383-7432');
   // (5) เบอร์เดียวแจ้งเกินโควตาต่อวัน
   if (countTodayByPhone_(phone) >= MAX_REPORTS_PER_PHONE_PER_DAY)
-    throw new Error('หมายเลขนี้แจ้งครบ ' + MAX_REPORTS_PER_PHONE_PER_DAY + ' ครั้งแล้วในวันนี้ หากเร่งด่วนโทร 053-537-478');
+    throw new Error('หมายเลขนี้แจ้งครบ ' + MAX_REPORTS_PER_PHONE_PER_DAY + ' ครั้งแล้วในวันนี้ หากเร่งด่วนโทร 0-5383-7432');
   // (6) เสาต้นนี้มีงานค้างอยู่แล้ว → ไม่สร้างซ้ำ แต่บอกเลขที่เดิมให้
   var dup = poleId ? findOpenReport_(poleId) : null;
   if (dup) return { ok: true, duplicate: true, report_id: dup.report_id, status: dup.status };
