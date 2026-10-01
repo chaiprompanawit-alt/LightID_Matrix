@@ -26,6 +26,6 @@ module.exports = async (req, res) => {
   if (error) console.error('ping failed', error, netError);
   res.status(error ? 500 : 200).json({
     ok: !error, poles: count, at: new Date().toISOString(),
-    supabase_host: origin ? new URL(origin).hostname : null, hint: chk.hint && (chk.hint + ' (ระบบปรับให้อัตโนมัติแล้ว)'), error: error && error.message, network: netError
+    supabase_host: origin ? new URL(origin).hostname : null, hint: chk.hint && (/ให้แล้ว/.test(chk.hint) ? chk.hint : chk.hint + ' (ระบบปรับให้อัตโนมัติแล้ว)'), error: error && error.message, network: netError
   });
 };
