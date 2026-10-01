@@ -14,7 +14,7 @@ const HOTLINE = process.env.HOTLINE || '0-5383-7432';  // เบอร์ อบ
 let _sb;
 function sb() {
   if (!_sb) {
-    const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_KEY;
+    const url = (process.env.SUPABASE_URL || '').trim(), key = (process.env.SUPABASE_SERVICE_KEY || '').trim();
     if (!url || !key) {
       // ทดลองในเครื่อง (npm run dev) โดยยังไม่มี Supabase → ใช้ฐานข้อมูลจำลอง; บน Vercel จริงต้องตั้งค่าเสมอ
       if (process.env.VERCEL) throw new Error('ยังไม่ได้ตั้ง SUPABASE_URL / SUPABASE_SERVICE_KEY ใน Environment Variables');
