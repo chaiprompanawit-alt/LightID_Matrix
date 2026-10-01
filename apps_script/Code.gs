@@ -1,5 +1,5 @@
 /**
- * ระบบแจ้งซ่อมไฟฟ้าสาธารณะ - เทศบาลตำบลป่าสัก (MVP)
+ * ระบบแจ้งซ่อมไฟฟ้าสาธารณะ - อบต.แม่ก๊า (MVP)
  * Google Apps Script Web App + Google Sheet
  *
  * โครงสร้าง Sheet (สร้างชีตชื่อตรงตามนี้):
@@ -62,7 +62,7 @@ function doGet(e) {
     t.token = (e.parameter.token || '');
     t.adminOk = isAdmin_(e.parameter.token);
     return t.evaluate()
-      .setTitle('แดชบอร์ดช่างไฟ - ทต.ป่าสัก')
+      .setTitle('แดชบอร์ดช่างไฟ - อบต.แม่ก๊า')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
@@ -77,7 +77,7 @@ function doGet(e) {
   t.pole = (t.qrOk && poleId) ? getPole(poleId) : null;
   t.openReport = (t.qrOk && poleId) ? findOpenReport_(poleId) : null; // มีงานค้างของเสานี้อยู่แล้วไหม
   return t.evaluate()
-    .setTitle('แจ้งซ่อมไฟฟ้าสาธารณะ - ทต.ป่าสัก')
+    .setTitle('แจ้งซ่อมไฟฟ้าสาธารณะ - อบต.แม่ก๊า')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
