@@ -61,7 +61,7 @@ cd web && npm install && npm run dev
 ซ้ำเสาเดิม · โควตา 3 ครั้ง/เบอร์/วัน · บัญชีดำ · honeypot + ส่งเร็ว <3 วิ · ลายเซ็น QR `k` · สถานะแจ้งเท็จ + ป้ายเตือน — อยู่ใน `api/report.js`
 
 ## ข้อควรรู้
-- **Supabase Free หลับถ้าไม่ใช้ 7 วัน** → `vercel.json` มี cron เรียก `/api/ping` ทุก 3 วันแล้ว (Vercel Hobby รองรับ cron รายวัน)
+- **Supabase Free หลับถ้าไม่ใช้ 7 วัน** → `vercel.json` มี cron เรียก `/api/ping` ทุกวัน 10:15 น. แล้ว (Vercel Hobby รองรับ cron วันละครั้ง) — ทดสอบเองได้โดยเปิด `/api/ping` ต้องเห็น `"ok":true`
 - **Vercel Hobby ห้ามใช้เชิงพาณิชย์** → วันที่ หจก. รับเงิน ให้ย้ายไป Vercel Pro หรือ Cloudflare Pages (โค้ดส่วน `api/` ต้องปรับเป็น Pages Functions)
 - โลโก้: วางไฟล์ที่ `public/assets/logo.png` จะขึ้นหัวหน้าชาวบ้านอัตโนมัติ
 - เปลี่ยนไปใช้กับ อบต. อื่น: แก้ `public/assets/config.js` + สีใน `@theme` ของแต่ละหน้า + `HOTLINE`

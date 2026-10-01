@@ -24,20 +24,24 @@ module.exports = async (req, res) => {
 
     const db = L.sb();
     // (4) บัญชีดำ
-    const { data: blocked } = await db.from('blocklist').select('phone').eq('phone', phone).maybeSingle();
+    const { data: blocked, error: eB } = await db.from('blocklist').select('phone').eq('phone', phone).maybeSingle();
+    dbOk(eB, 'blocklist');
     if (blocked) throw new Error('ไม่สามารถรับแจ้งจากหมายเลขนี้ได้ กรุณาติดต่อ ' + L.HOTLINE);
     // (5) โควตาต่อเบอร์ต่อวัน
-    const { count } = await db.from('reports').select('report_id', { count: 'exact', head: true })
+    const { count, error: eC } = await db.from('reports').select('report_id', { count: 'exact', head: true })
       .eq('reporter_phone', phone).gte('created_at', L.bkkStartOfToday().toISOString());
+    dbOk(eC, 'quota');
     if ((count || 0) >= L.MAX_REPORTS_PER_PHONE_PER_DAY)
       throw new Error(`หมายเลขนี้แจ้งครบ ${L.MAX_REPORTS_PER_PHONE_PER_DAY} ครั้งแล้วในวันนี้ หากเร่งด่วนโทร ${L.HOTLINE}`);
     // (6) เสาต้นนี้มีงานค้างอยู่แล้ว → ไม่สร้างซ้ำ บอกเลขที่เดิม
-    const { data: dup } = await db.from('reports').select('report_id,status').eq('pole_id', poleId)
+    const { data: dup, error: eD } = await db.from('reports').select('report_id,status').eq('pole_id', poleId)
       .in('status', L.OPEN_STATUS).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    dbOk(eD, 'duplicate');
     if (dup) return res.json({ ok: true, duplicate: true, report_id: dup.report_id, status: dup.status });
 
     // พิกัด: ใช้ของเสาที่สำรวจไว้เป็นหลัก ถ้าไม่มีค่อยใช้ GPS ผู้แจ้ง
-    const { data: pole } = await db.from('poles').select('*').eq('pole_id', poleId).maybeSingle();
+    const { data: pole, error: eP } = await db.from('poles').select('*').eq('pole_id', poleId).maybeSingle();
+    dbOk(eP, 'pole');
     const lat = pole && pole.lat ? pole.lat : (parseFloat(p.gps_lat) || null);
     const lng = pole && pole.lng ? pole.lng : (parseFloat(p.gps_lng) || null);
 
@@ -49,6 +53,11 @@ module.exports = async (req, res) => {
     await notifyNewReport(row, pole);
     res.json({ ok: true, report_id: row.report_id });
   } catch (e) {
+    console.error('report failed', e.message);
     res.status(400).json({ error: e.message });
   }
 };
+
+function dbOk(error, step) {
+  if (error) throw new Error('ฐานข้อมูลขัดข้อง (' + step + '): ' + error.message);
+}

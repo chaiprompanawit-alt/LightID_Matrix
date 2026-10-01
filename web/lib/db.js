@@ -27,7 +27,7 @@ function sb() {
 
 /** ลายเซ็น QR: 6 ตัวแรกของ SHA-256("QR_SECRET|pole_id") — ต้องตรงกับ docs/qr_generator.html */
 function poleSig(poleId) {
-  const secret = process.env.QR_SECRET || '';
+  const secret = (process.env.QR_SECRET || '').trim();
   if (!secret) return '';
   return crypto.createHash('sha256').update(secret + '|' + poleId, 'utf8').digest('hex').slice(0, 6);
 }

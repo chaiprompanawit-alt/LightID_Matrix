@@ -1,13 +1,38 @@
 {
   "rewrites": [
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/tech",  "destination": "/tech.html" },
-    { "source": "/r",     "destination": "/index.html" }
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/tech",
+      "destination": "/tech.html"
+    },
+    {
+      "source": "/r",
+      "destination": "/index.html"
+    }
   ],
   "crons": [
-    { "path": "/api/ping", "schedule": "0 3 */3 * *" }
+    {
+      "path": "/api/ping",
+      "schedule": "15 3 * * *"
+    }
   ],
   "headers": [
-    { "source": "/api/(.*)", "headers": [ { "key": "Cache-Control", "value": "no-store" } ] }
-  ]
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ],
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 20
+    }
+  }
 }

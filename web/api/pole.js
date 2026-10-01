@@ -9,10 +9,12 @@ module.exports = async (req, res) => {
   if (!ok) return res.json({ qrOk: false });
   if (!poleId) return res.json({ qrOk: true, pole_id: '', pole: null, openReport: null });
 
-  const [{ data: pole }, { data: open }] = await Promise.all([
+  const [{ data: pole, error: e1 }, { data: open, error: e2 }] = await Promise.all([
     sb().from('poles').select('pole_id,zone,address,lat,lng,note').eq('pole_id', poleId).maybeSingle(),
     sb().from('reports').select('report_id,status,created_at').eq('pole_id', poleId).in('status', OPEN_STATUS)
       .order('created_at', { ascending: false }).limit(1).maybeSingle()
   ]);
+  const err = e1 || e2;
+  if (err) { console.error('pole lookup failed', poleId, err); return res.status(500).json({ error: 'ฐานข้อมูลขัดข้อง: ' + err.message }); }
   res.json({ qrOk: true, pole_id: poleId, pole: pole || null, openReport: open || null });
 };

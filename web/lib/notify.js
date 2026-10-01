@@ -7,6 +7,7 @@ async function notifyNewReport(r, pole) {
   try {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
+      signal: AbortSignal.timeout(5000),
       headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         from: process.env.NOTIFY_FROM || 'onboarding@resend.dev',
