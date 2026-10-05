@@ -17,6 +17,7 @@ var ICO = {
   lock:'<path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z"/><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0"/><path d="M8 11v-4a4 4 0 1 1 8 0v4"/>',
   warn:'<path d="M12 9v4"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z"/><path d="M12 16h.01"/>',
   check:'<path d="M5 12l5 5l10 -10"/>',
+  earth:'<path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M3.6 9h16.8"/><path d="M3.6 15h16.8"/><path d="M11.5 3a17 17 0 0 0 0 18"/><path d="M12.5 3a17 17 0 0 1 0 18"/>',
   pin:'<path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"/>',
   refresh:'<path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>',
   clock:'<path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 7v5l3 3"/>',
@@ -59,6 +60,23 @@ function gmaps(lat,lng){   // เปิดโหมดนำทางทัน�
   var o = window.ORG && ORG.navFrom;
   return 'https://www.google.com/maps/dir/?api=1'+(o?'&origin='+o[0]+','+o[1]:'')+'&destination='+lat+','+lng;
 }
+// ไฟล์ .kml สำหรับเปิดใน Google Earth Pro (ดับเบิลคลิกไฟล์ที่ดาวน์โหลด → บินไปที่เสา + หมุด อบต. + เส้นตรงระหว่างกัน)
+function earthKml(lat,lng,poleId){
+  var x=function(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  var o=window.ORG&&ORG.navFrom, name='เสา '+poleId;
+  var pm=function(n,a,b){ return '<Placemark><name>'+x(n)+'</name><Point><coordinates>'+b+','+a+',0</coordinates></Point></Placemark>'; };
+  var kml='<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+x(name+' · '+ORG.short)+'</name>'+
+    '<LookAt><longitude>'+lng+'</longitude><latitude>'+lat+'</latitude><altitude>0</altitude><range>300</range><tilt>45</tilt><heading>0</heading></LookAt>'+
+    pm(name,lat,lng)+
+    (o?pm('ที่ทำการ '+ORG.short,o[0],o[1])+'<Placemark><name>'+x(ORG.short+' → '+name)+'</name><Style><LineStyle><color>ff00a5ff</color><width>3</width></LineStyle></Style><LineString><tessellate>1</tessellate><coordinates>'+o[1]+','+o[0]+',0 '+lng+','+lat+',0</coordinates></LineString></Placemark>':'')+
+    '</Document></kml>';
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([kml],{type:'application/vnd.google-earth.kml+xml'}));
+  a.download='pole_'+String(poleId).replace(/[^0-9A-Za-z]+/g,'-')+'.kml';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); },5000);
+}
+function earthBtn(r,cls){ return '<button type="button" class="'+cls+'" title="ดาวน์โหลดไฟล์ .kml แล้วดับเบิลคลิกเพื่อเปิดใน Google Earth Pro" onclick="earthKml('+(+r.lat)+','+(+r.lng)+',this.dataset.p)" data-p="'+esc(r.pole_id)+'">'+ico('earth')+'Google Earth</button>'; }
 function ago(iso){ var h=(Date.now()-new Date(iso))/36e5; if(h<1) return Math.round(h*60)+' นาที'; if(h<48) return Math.round(h)+' ชม.'; return Math.round(h/24)+' วัน'; }
 
 /* ---------- PWA: ติดตั้งเป็นแอปบนมือถือ/แท็บเล็ต/คอม ---------- */
@@ -205,7 +223,7 @@ Board.render = function(){
       var m=L.circleMarker([+r.lat,+r.lng],{radius:ov?12:10,color:ov?'#f2b632':'#fff',weight:ov?4:2,fillColor:c,fillOpacity:.95});
       m.bindPopup('<b class="text-base">เสา '+esc(r.pole_id)+'</b> '+pill(r.status)+(ov?' <span class="'+T.pill+' bg-accent-soft text-accent-dark border border-accent">เกิน SLA '+ov+' วัน</span>':'')+'<br>'+esc(r.detail)+
         '<br><span class="text-xs text-muted">ห่างจาก '+esc(ORG.short)+' ~'+fromHome(r.lat,r.lng)+' (เส้นตรง)</span>'+
-        '<br><a class="'+T.btnSm+' bg-brand text-white mt-1.5" style="color:#fff" href="'+gmaps(r.lat,r.lng)+'" target="_blank" rel="noopener">'+ico('nav')+'นำทางจาก '+esc(ORG.short)+'</a>');
+        '<br><a class="'+T.btnSm+' bg-brand text-white mt-1.5" style="color:#fff" href="'+gmaps(r.lat,r.lng)+'" target="_blank" rel="noopener">'+ico('nav')+'นำทางจาก '+esc(ORG.short)+'</a> '+earthBtn(r,T.btnSm+' border border-brand text-brand bg-white mt-1.5'));
       Board.markers.addLayer(m); pts.push([+r.lat,+r.lng]);
     }
   });
@@ -214,7 +232,7 @@ Board.render = function(){
 
   document.getElementById('list').innerHTML = rows.map(function(r){
     var c=CLS[r.status]||['','',''], id=r.report_id.replace(/[^A-Za-z0-9]/g,''), ov=slaOver(r), isOpen=OPEN_STATUS.indexOf(r.status)>=0;
-    var nav=(r.lat&&r.lng)?'<a class="'+T.btn+' py-2 flex-1 sm:flex-none" href="'+gmaps(r.lat,r.lng)+'" target="_blank" rel="noopener">'+ico('nav')+'นำทาง</a>':'<span class="text-sm text-muted self-center">ไม่มีพิกัด</span>';
+    var nav=(r.lat&&r.lng)?'<a class="'+T.btn+' py-2 flex-1 sm:flex-none" href="'+gmaps(r.lat,r.lng)+'" target="_blank" rel="noopener">'+ico('nav')+'นำทาง</a>'+earthBtn(r,T.btnOut+' py-2'):'<span class="text-sm text-muted self-center">ไม่มีพิกัด</span>';
     var opts=STATUS.map(function(s){return '<option'+(s===r.status?' selected':'')+'>'+s+'</option>';}).join('');
     var fake = r.fake_count>0 ? ' <span class="'+T.pill+' p-fake" title="เบอร์นี้เคยถูกตีเป็นแจ้งเท็จ">'+SYM['แจ้งเท็จ']+' เคยแจ้งเท็จ '+r.fake_count+' ครั้ง</span>' : '';
     var blk = (Board.onBlock && r.fake_count>0) ? ' <a href="#" onclick="Board.onBlock(\''+esc(r.reporter_phone)+'\');return false" class="text-[var(--new)] underline">บล็อกเบอร์</a>' : '';
