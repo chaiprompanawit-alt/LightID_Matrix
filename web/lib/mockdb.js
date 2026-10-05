@@ -4,14 +4,14 @@ const tables = {
   poles: [{ pole_id: '1/1', zone: '1', address: 'เสาทดลองระบบ', lat: 18.582125, lng: 98.952782, note: 'TEST' },
           { pole_id: '1/2', zone: '1', address: 'ปากซอยทดลอง', lat: 18.5835, lng: 98.9540, note: '' },
           { pole_id: '2/5', zone: '2', address: 'หน้าศาลาหมู่ 2', lat: 18.5790, lng: 98.9500, note: '' }],
-  reports: [], blocklist: [], staff_users: []
+  reports: [], report_photos: [], blocklist: [], staff_users: []
 };
-const PK = { poles: 'pole_id', reports: 'report_id', blocklist: 'phone', staff_users: 'username' };
+const PK = { poles: 'pole_id', reports: 'report_id', report_photos: 'report_id', blocklist: 'phone', staff_users: 'username' };
 // ข้อมูลตัวอย่างให้เห็นแดชบอร์ด/รายงานทันที
 (function seed() {
   const now = Date.now(), d = h => new Date(now - h * 3600e3).toISOString();
   tables.reports.push(
-    { report_id: 'R250915-081200-101', created_at: d(80), pole_id: '1/1', lat: 18.582125, lng: 98.952782, reporter_name: 'นางสมพร (ทดสอบ)', reporter_phone: '0810000001', detail: 'ไฟดับทั้งต้น', status: 'เสร็จสิ้น', assigned_to: 'ช่างเอ', staff_note: 'เปลี่ยนหลอด', updated_at: d(30), done_at: d(30) },
+    { report_id: 'R250915-081200-101', created_at: d(80), pole_id: '1/1', lat: 18.582125, lng: 98.952782, reporter_name: 'นางสมพร (ทดสอบ)', reporter_phone: '0810000001', detail: 'ไฟดับทั้งต้น', status: 'เสร็จสิ้น', assigned_to: 'ช่างเอ', staff_note: 'เปลี่ยนหลอด', updated_at: d(30), done_at: d(30), has_photo: false, photo_deleted_at: d(30) },
     { report_id: 'R250916-190500-202', created_at: d(40), pole_id: '1/2', lat: 18.5835, lng: 98.954, reporter_name: 'นายวิชัย (ทดสอบ)', reporter_phone: '0810000002', detail: 'ไฟกะพริบ', status: 'กำลังดำเนินการ', assigned_to: 'ช่างเอ', staff_note: '', updated_at: d(20), done_at: null },
     { report_id: 'R250917-200100-303', created_at: d(12), pole_id: '2/5', lat: 18.579, lng: 98.95, reporter_name: 'นางสาวมะลิ (ทดสอบ)', reporter_phone: '0810000003', detail: 'โคมแตก/ห้อย', status: 'แจ้งใหม่', assigned_to: '', staff_note: '', updated_at: d(12), done_at: null },
     { report_id: 'R250901-090000-505', created_at: d(24*15), pole_id: '2/5', lat: 18.5790, lng: 98.9500, reporter_name: 'นายบุญมี (ทดสอบ)', reporter_phone: '0810000004', detail: 'สายไฟหลุด/ห้อยต่ำ', status: 'รับเรื่องแล้ว', assigned_to: 'ช่างบี', staff_note: '', updated_at: d(24*14), done_at: null },

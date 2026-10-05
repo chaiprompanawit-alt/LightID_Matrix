@@ -34,6 +34,17 @@ create index if not exists reports_pole_status_idx on reports (pole_id, status);
 create index if not exists reports_phone_created_idx on reports (reporter_phone, created_at desc);
 create index if not exists reports_created_idx on reports (created_at desc);
 
+-- ---------- ภาพที่ชาวบ้านแนบ (ชั่วคราว: ลบอัตโนมัติเมื่อปิดงาน) ----------
+-- รันไฟล์นี้ซ้ำได้ปลอดภัย (if not exists) — ระบบที่ติดตั้งไปแล้วให้รันใหม่ทั้งไฟล์เพื่อเพิ่มส่วนนี้
+alter table reports add column if not exists has_photo        boolean not null default false;
+alter table reports add column if not exists photo_deleted_at timestamptz;   -- เวลาที่ระบบลบภาพตอนปิดงาน (แจ้งเตือนแอดมิน)
+create table if not exists report_photos (
+  report_id  text primary key references reports(report_id) on delete cascade,
+  mime       text not null,             -- image/jpeg (ย่อขนาดจากมือถือแล้ว ~100–400 KB)
+  data       text not null,             -- base64 เก็บแยกตาราง รายการงานจะได้โหลดเร็ว
+  created_at timestamptz not null default now()
+);
+
 -- ---------- บัญชีดำเบอร์โทร ----------
 create table if not exists blocklist (
   phone      text primary key,          -- เฉพาะตัวเลข
@@ -47,6 +58,7 @@ create table if not exists blocklist (
 alter table poles     enable row level security;
 alter table reports   enable row level security;
 alter table blocklist enable row level security;
+alter table report_photos enable row level security;
 
 -- ---------- เสาทดลอง (ใช้ทดสอบระบบก่อนสำรวจจริง — ลบทิ้งได้ภายหลัง) ----------
 insert into poles (pole_id, zone, address, lat, lng, note) values

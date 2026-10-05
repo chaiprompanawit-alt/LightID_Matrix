@@ -47,6 +47,7 @@ function start(){
   var hd=document.querySelector('header.sticky'); if(hd){ var setH=function(){ document.documentElement.style.setProperty('--topbar-h', hd.offsetHeight+'px'); }; setH(); if(window.ResizeObserver) new ResizeObserver(setH).observe(hd); else setTimeout(setH,1500); }
   document.getElementById('tab_board').innerHTML = Board.html();
   Board.onBlock = blockPhone;
+  Board.photoNotice = true;   // แจ้งเตือนภาพผู้แจ้งที่ถูกลบตอนปิดงาน
   Board.initMap(); Board.load().catch(function(e){ alert('โหลดข้อมูลไม่สำเร็จ: '+e.message); });
   show(location.hash.replace('#','') || 'board');
 }

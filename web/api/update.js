@@ -1,5 +1,5 @@
 // POST /api/update {report_id, status, assigned_to, staff_note} (ช่าง/แอดมิน)
-const { sb, requireRole, body, STATUS_LIST, DONE_STATUS, clean } = require('../lib/db');
+const { sb, requireRole, body, STATUS_LIST, OPEN_STATUS, DONE_STATUS, clean } = require('../lib/db');
 module.exports = async (req, res) => {
   const me = requireRole(req, res, ['admin', 'tech']); if (!me) return;
   const p = body(req);
@@ -19,7 +19,18 @@ module.exports = async (req, res) => {
       if (!cur || !cur.done_at) patch.done_at = patch.updated_at;
     } else patch.done_at = null;
   }
+  // ปิดงาน (เสร็จสิ้น / ไม่พบปัญหา / แจ้งเท็จ) → ลบภาพที่ชาวบ้านแนบทิ้งถาวร (ลดข้อมูลส่วนบุคคลตาม PDPA)
+  // บันทึกเวลาที่ลบไว้ใน photo_deleted_at ให้หน้าแอดมินแจ้งเตือน
+  let photoDeleted = false;
+  if (p.status && !OPEN_STATUS.includes(p.status)) {
+    const { data: ph } = await sb().from('report_photos').select('report_id').eq('report_id', p.report_id).maybeSingle();
+    if (ph) {
+      const { error: eDel } = await sb().from('report_photos').delete().eq('report_id', p.report_id);
+      if (eDel) return res.status(500).json({ error: 'ลบภาพไม่สำเร็จ: ' + eDel.message });
+      patch.has_photo = false; patch.photo_deleted_at = patch.updated_at; photoDeleted = true;
+    }
+  }
   const { error } = await sb().from('reports').update(patch).eq('report_id', p.report_id);
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ ok: true });
+  res.json({ ok: true, photo_deleted: photoDeleted });
 };

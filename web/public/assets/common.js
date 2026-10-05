@@ -30,6 +30,8 @@ var ICO = {
   list:'<path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M5 6v.01"/><path d="M5 12v.01"/><path d="M5 18v.01"/>',
   search:'<path d="M3 10a7 7 0 1 0 14 0a7 7 0 0 0 -14 0"/><path d="M21 21l-6 -6"/>',
   save:'<path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2"/><path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M14 4l0 4l-6 0l0 -4"/>',
+  camera:'<path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>',
+  trash:'<path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>',
   edit:'<path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/><path d="M16 5l3 3"/>'
 };
 function ico(n, cls){ return '<svg class="ic '+(cls||'')+'" viewBox="0 0 24 24" aria-hidden="true">'+ICO[n]+'</svg>'; }
@@ -182,6 +184,7 @@ Board.render = function(){
   // งานเกิน SLA ขึ้นก่อน → งานค้าง → ที่เหลือ (ใหม่สุดก่อน)
   rows.sort(function(a,b){ var oa=slaOver(a), ob=slaOver(b); if(!!oa!==!!ob) return ob-oa; var pa=OPEN_STATUS.indexOf(a.status)>=0, pb=OPEN_STATUS.indexOf(b.status)>=0; if(pa!==pb) return pb-pa; return new Date(b.created_at)-new Date(a.created_at); });
   document.getElementById('f_count').textContent='แสดง '+rows.length+' รายการ';
+  Board.renderPhotoNotice();
 
   var cnt={}, open=0, over=0; Board.data.forEach(function(r){ cnt[r.status]=(cnt[r.status]||0)+1; if(OPEN_STATUS.indexOf(r.status)>=0) open++; if(slaOver(r)) over++; });
   var on=function(v){ return f.status===v?' ring-2 ring-brand border-brand':''; };
@@ -226,6 +229,8 @@ Board.render = function(){
         'ผู้แจ้ง '+esc(r.reporter_name)+' <a class="text-brand font-semibold" href="tel:'+esc(r.reporter_phone)+'">'+esc(r.reporter_phone)+'</a>'+fake+blk+
         (r.assigned_to?'<br>ผู้รับผิดชอบ <b class="text-ink">'+esc(r.assigned_to)+'</b>':'')+
         (r.staff_note?'<br>บันทึกช่าง: '+esc(r.staff_note):'')+'</div>'+
+      (r.has_photo?'<div class="mt-2" id="ph_'+id+'"><button class="'+T.btnOut+' py-2" onclick="Board.photo(\''+esc(r.report_id)+'\',\''+id+'\')">'+ico('camera')+'ดูภาพที่ผู้แจ้งแนบ</button></div>':'')+
+      (r.photo_deleted_at?'<div class="mt-2 text-sm text-muted inline-flex items-center gap-1">'+ico('trash')+'ภาพที่ผู้แจ้งแนบถูกลบแล้ว '+fmtDT(r.photo_deleted_at)+' (ปิดงาน)</div>':'')+
       '<div class="flex flex-wrap gap-2 mt-3">'+nav+
         '<a class="'+T.btnOut+' py-2" href="tel:'+esc(r.reporter_phone)+'">'+ico('phone')+'โทรผู้แจ้ง</a></div>'+
       '<details class="mt-2.5 group"><summary class="'+T.btnOut+' py-2 list-none [&::-webkit-details-marker]:hidden">'+ico('edit')+'อัปเดตงาน</summary>'+
@@ -245,16 +250,50 @@ Board.view=function(v){
 };
 Board.setStatus=function(v){ document.getElementById('f_status').value=v; Board.render(); };
 Board.save = async function(rid,id){
+  var st=document.getElementById('st_'+id).value, r=Board.data.filter(function(x){ return x.report_id===rid; })[0];
+  if (r && r.has_photo && OPEN_STATUS.indexOf(st)<0 &&
+      !confirm('เปลี่ยนเป็น "'+st+'" = ปิดงาน\nภาพที่ผู้แจ้งแนบจะถูกลบถาวร ดูย้อนหลังไม่ได้อีก\n\nดำเนินการต่อ?')) return;
   try {
-    await api('/api/update',{method:'POST',body:{report_id:rid,status:document.getElementById('st_'+id).value,
+    var j = await api('/api/update',{method:'POST',body:{report_id:rid,status:st,
       assigned_to:document.getElementById('as_'+id).value,staff_note:document.getElementById('nt_'+id).value}});
+    if (j && j.photo_deleted) alert('บันทึกแล้ว — ลบภาพที่ผู้แจ้งแนบของงาน '+rid+' เรียบร้อย');
     await Board.load();
   } catch(e){ alert('บันทึกไม่สำเร็จ: '+e.message); }
 };
+/** โหลดภาพที่ผู้แจ้งแนบมาแสดงในการ์ด (ภาพไม่อยู่ในรายการงาน โหลดเมื่อกดเท่านั้น) */
+Board.photo = async function(rid,id){
+  var box=document.getElementById('ph_'+id); box.innerHTML='<span class="text-sm text-muted">กำลังโหลดภาพ…</span>';
+  try {
+    var j = await api('/api/photo?id='+encodeURIComponent(rid)); if(!j) return;
+    var src='data:'+j.mime+';base64,'+j.data;
+    box.innerHTML='<a href="'+src+'" target="_blank" rel="noopener"><img src="'+src+'" alt="ภาพที่ผู้แจ้งแนบ" class="max-h-72 max-w-full rounded-[10px] border border-line"></a>'+
+      '<div class="text-xs text-muted mt-1">ภาพนี้จะถูกลบอัตโนมัติเมื่อปิดงาน</div>';
+  } catch(e){ box.innerHTML='<span class="text-sm text-[var(--new)]">'+esc(e.message)+'</span>'; }
+};
+/** แอดมิน: แจ้งเตือนภาพที่ถูกลบอัตโนมัติตอนปิดงาน (กด "รับทราบ" แล้วซ่อนจนกว่าจะมีรายการใหม่ — จำไว้เฉพาะเครื่องนี้) */
+Board.photoNotice = false;
+Board.ackKey = function(){ return 'saofi_photo_ack_'+((Auth.get()||{}).username||''); };
+Board.renderPhotoNotice = function(){
+  var el=document.getElementById('photoNotice'); if(!el) return;
+  if(!Board.photoNotice){ el.innerHTML=''; return; }
+  var ack=''; try { ack=localStorage.getItem(Board.ackKey())||''; } catch(e){}
+  var since=Date.now()-7*864e5;
+  var rows=Board.data.filter(function(r){ return r.photo_deleted_at && new Date(r.photo_deleted_at)>since && r.photo_deleted_at>ack; })
+    .sort(function(a,b){ return a.photo_deleted_at<b.photo_deleted_at?1:-1; });
+  if(!rows.length){ el.innerHTML=''; return; }
+  var latest=rows[0].photo_deleted_at;
+  el.innerHTML='<div class="mx-3 mt-3 bg-white border border-line border-l-[6px] border-l-[var(--close)] rounded-2xl p-3.5" role="status">'+
+    '<div class="flex flex-wrap justify-between items-start gap-2"><div class="font-bold text-ink inline-flex items-center gap-1.5">'+ico('trash')+'ภาพที่ผู้แจ้งแนบถูกลบอัตโนมัติ '+rows.length+' งาน <span class="font-normal text-sm text-muted">(ปิดงานแล้ว · 7 วันล่าสุด)</span></div>'+
+    '<button class="'+T.btnOut+' py-1.5" onclick="Board.ackPhotos(\''+esc(latest)+'\')">'+ico('check')+'รับทราบ</button></div>'+
+    '<ul class="m-0 mt-2 pl-5 text-sm text-muted">'+rows.slice(0,10).map(function(r){
+      return '<li>เสา <b class="text-ink">'+esc(r.pole_id)+'</b> · <span class="font-mono text-xs">'+esc(r.report_id)+'</span> · '+esc(r.status)+' · ลบเมื่อ '+fmtDT(r.photo_deleted_at)+(r.assigned_to?' · '+esc(r.assigned_to):'')+'</li>';
+    }).join('')+(rows.length>10?'<li>และอีก '+(rows.length-10)+' งาน</li>':'')+'</ul></div>';
+};
+Board.ackPhotos = function(latest){ try { localStorage.setItem(Board.ackKey(), latest); } catch(e){} Board.renderPhotoNotice(); };
 /** HTML ส่วนสถิติ+ฟิลเตอร์+แผนที่+รายการ (ใช้ซ้ำทั้งสองหน้า) */
 Board.html = function(){
   var sel=T.input+' w-auto flex-1 min-w-[120px] py-2 text-sm';
-  return '<div class="flex flex-wrap gap-2 items-center px-3 pt-3" id="stats"></div>'+
+  return '<div id="photoNotice" class="noprint"></div><div class="flex flex-wrap gap-2 items-center px-3 pt-3" id="stats"></div>'+
     '<div class="flex flex-wrap items-center gap-2 px-3 py-2.5 noprint"><select id="f_status" class="'+sel+'" onchange="Board.render()" aria-label="กรองสถานะ"><option value="">ทุกสถานะ</option><option value="__open">งานค้างทั้งหมด</option><option value="__over">เกิน SLA</option>'+
       STATUS.map(function(s){return '<option>'+s+'</option>';}).join('')+'</select>'+
     '<select id="f_moo" class="'+sel+'" onchange="Board.render()" aria-label="กรองหมู่"><option value="">ทุกหมู่</option></select>'+

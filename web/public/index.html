@@ -47,6 +47,7 @@
   var POLE = (qs.get('pole') || '').trim(), K = qs.get('k') || '';
   var OPENED_AT = Date.now();   // จับเวลาตั้งแต่เปิดหน้า กันบอทส่งทันที
   var gps = { lat:'', lng:'' };
+  var PHOTO = '';   // data URL ของภาพที่ย่อแล้ว (ไม่บังคับ)
   var app = document.getElementById('app');
 
   var I = 'w-full px-3.5 py-3 rounded-[10px] border border-line bg-white text-ink text-base placeholder:text-slate-500 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/30';
@@ -57,6 +58,7 @@
     bell:'<path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"/><path d="M9 17v1a3 3 0 0 0 6 0v-1"/>',
     x:'<path d="M18 6l-12 12"/><path d="M6 6l12 12"/>',
     pin:'<path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"/>',
+    camera:'<path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>',
     lock:'<path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z"/><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0"/><path d="M8 11v-4a4 4 0 1 1 8 0v4"/>'
   };
   function ico(n,cls){ return '<svg class="ic '+(cls||'')+'" viewBox="0 0 24 24" aria-hidden="true">'+ICO[n]+'</svg>'; }
@@ -126,6 +128,9 @@
       '<div class="flex flex-wrap gap-2 mb-2" id="quick">'+['ไฟดับทั้งต้น','ไฟกะพริบ','ไฟติดกลางวัน','โคมแตก/ห้อย','สายไฟหลุด/ห้อยต่ำ','เสาเอียง/ล้ม'].map(function(t){
         return '<button type="button" class="px-4 py-2 rounded-full border-2 border-brand text-brand text-base font-semibold bg-white hover:bg-brand-soft" onclick="pick(this)">'+t+'</button>';}).join('')+'</div>'+
       '<textarea id="detail" class="'+I+' min-h-[88px]" placeholder="พิมพ์เพิ่มได้ เช่น ดับมา 3 คืนแล้ว"></textarea>'+
+      '<label class="'+LBL+'">ภาพประกอบ <span class="font-normal text-sm text-muted">(ไม่บังคับ)</span></label>'+
+      '<div id="photoBox">'+photoBtn()+'</div>'+
+      '<p class="text-xs text-muted mt-1.5">ภาพ 1 ภาพ ช่วยให้ช่างเห็นอาการก่อนออกงาน · <b>ภาพจะถูกลบอัตโนมัติเมื่อปิดงาน</b></p>'+
       '<div style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true"><label>Website</label><input id="website" tabindex="-1" autocomplete="off"></div>'+
       (!pole ? '<div class="flex items-center gap-2 mt-3"><button type="button" class="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] border-2 border-brand text-brand bg-white text-sm font-semibold hover:bg-brand-soft" onclick="getGPS()">'+ico('pin')+'แนบตำแหน่งปัจจุบัน</button><span class="text-xs text-muted" id="gpsStatus">ช่วยให้ช่างหาเสาเจอง่ายขึ้น</span></div>' : '')+
       '<button id="btn" class="w-full mt-5 py-4 rounded-[10px] bg-brand hover:bg-brand-dark text-white text-xl font-extrabold disabled:opacity-60" onclick="submitForm()">ส่งเรื่องแจ้งซ่อม</button>'+
@@ -137,6 +142,29 @@
     var d=document.getElementById('detail'); var t=b.textContent;
     if (d.value.indexOf(t)>=0) { d.value = d.value.replace(t,'').replace(/\s+/g,' ').trim(); b.classList.remove('bg-brand','text-white'); b.classList.add('bg-white','text-brand'); b.setAttribute('aria-pressed','false'); }
     else { d.value = d.value ? d.value+' '+t : t; b.classList.remove('bg-white','text-brand'); b.classList.add('bg-brand','text-white'); b.setAttribute('aria-pressed','true'); }
+  }
+  /** ย่อภาพในมือถือก่อนส่ง (ด้านยาวสุด 1280px, JPEG) → ไฟล์เล็ก ส่งไวแม้เน็ตช้า และตัดข้อมูลแฝงในไฟล์ (เช่น พิกัด EXIF) ทิ้ง */
+  function pickPhoto(inp){
+    var f = inp.files && inp.files[0]; if (!f) return;
+    var box = document.getElementById('photoBox');
+    var url = URL.createObjectURL(f), img = new Image();
+    img.onload = function(){
+      var max = 1280, w = img.naturalWidth, h = img.naturalHeight, sc = Math.min(1, max/Math.max(w,h));
+      var c = document.createElement('canvas'); c.width = Math.round(w*sc); c.height = Math.round(h*sc);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      var q = 0.75; PHOTO = c.toDataURL('image/jpeg', q);
+      while (PHOTO.length > 1.4e6 && q > 0.35) { q -= 0.15; PHOTO = c.toDataURL('image/jpeg', q); }
+      box.innerHTML = '<div class="flex items-center gap-3"><img src="'+PHOTO+'" alt="ภาพที่แนบ" class="h-24 w-24 object-cover rounded-[10px] border border-line">'+
+        '<button type="button" class="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] border-2 border-line text-muted bg-white text-sm font-semibold" onclick="clearPhoto()">'+ico('x')+'เอาภาพออก</button></div>';
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); inp.value=''; alert('เปิดไฟล์ภาพนี้ไม่ได้ กรุณาเลือกภาพอื่น'); };
+    img.src = url;
+  }
+  function photoBtn(){ return '<label class="inline-flex items-center gap-1.5 px-4 py-3 rounded-[10px] border-2 border-dashed border-brand text-brand bg-white font-semibold cursor-pointer hover:bg-brand-soft">'+ico('camera')+'ถ่าย/เลือกภาพ<input id="photo" type="file" accept="image/*" class="sr-only" onchange="pickPhoto(this)"></label>'; }
+  function clearPhoto(){
+    PHOTO = '';
+    document.getElementById('photoBox').innerHTML = photoBtn();
   }
   function getGPS(){
     var s=document.getElementById('gpsStatus');
@@ -157,7 +185,7 @@
     try {
       var r = await fetchT('/api/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         pole_id:poleId, k:K, reporter_name:name, reporter_phone:phone, detail:detail, gps_lat:gps.lat, gps_lng:gps.lng,
-        website:document.getElementById('website').value, opened_at:OPENED_AT })}, 25000);
+        website:document.getElementById('website').value, opened_at:OPENED_AT, photo:PHOTO })}, PHOTO ? 45000 : 25000);
       var res = await readJson(r);
       document.getElementById('formArea').classList.add('hidden');
       var d=document.getElementById('doneArea'); d.classList.remove('hidden');

@@ -13,6 +13,7 @@ module.exports = async (req, res) => {
     if (!name || !phone || !detail) throw new Error('กรุณากรอก ชื่อ / เบอร์โทร / รายละเอียด ให้ครบ');
     if (phone.length < 9) throw new Error('เบอร์โทรไม่ถูกต้อง');
     if (!poleId) throw new Error('กรุณากรอกเลขเสา');
+    const photo = L.parsePhoto(p.photo);   // ไม่บังคับ
 
     // (1) honeypot — บอทกรอกช่องที่คนมองไม่เห็น → ตอบเหมือนสำเร็จแต่ไม่บันทึก
     if (p.website) return res.json({ ok: true, report_id: 'R-OK' });
@@ -46,12 +47,22 @@ module.exports = async (req, res) => {
     const lng = pole && pole.lng ? pole.lng : (parseFloat(p.gps_lng) || null);
 
     const row = { report_id: L.newReportId(), pole_id: poleId, lat, lng, reporter_name: name,
-      reporter_phone: phone, detail, status: 'แจ้งใหม่' };
+      reporter_phone: phone, detail, status: 'แจ้งใหม่', has_photo: false };
     const { error } = await db.from('reports').insert(row);
     if (error) throw new Error('บันทึกไม่สำเร็จ กรุณาลองใหม่ (' + error.message + ')');
 
+    // เก็บภาพแยกตาราง — ถ้าเก็บภาพไม่สำเร็จ เรื่องแจ้งยังรับไว้ตามปกติ (ภาพเป็นของเสริม)
+    if (photo) {
+      const { error: eF } = await db.from('report_photos').insert({ report_id: row.report_id, mime: photo.mime, data: photo.data });
+      if (eF) console.error('photo save failed', eF.message);
+      else {
+        row.has_photo = true;
+        await db.from('reports').update({ has_photo: true }).eq('report_id', row.report_id);
+      }
+    }
+
     await notifyNewReport(row, pole);
-    res.json({ ok: true, report_id: row.report_id });
+    res.json({ ok: true, report_id: row.report_id, photo: row.has_photo });
   } catch (e) {
     console.error('report failed', e.message);
     res.status(400).json({ error: e.message });

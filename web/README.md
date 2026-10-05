@@ -15,9 +15,9 @@ web/
 │  ├─ assets/         config.js = ชื่อ อบต./เบอร์/พิกัดศูนย์แผนที่ (เปลี่ยนที่เดียว) · common.js · app.css · logo.jpg
 │  ├─ icons/          ไอคอนแอป (สร้างจาก logo.jpg)
 │  ├─ manifest.webmanifest + sw.js   PWA: ติดตั้งเป็นแอปบนมือถือ/แท็บเล็ต/คอม เปิดได้แม้เน็ตสะดุด (API ไม่แคช)
-├─ api/               Serverless Functions: pole, report, login, me, users, reports, update, block, poles, stats, ping
+├─ api/               Serverless Functions: pole, report, photo, login, me, users, reports, update, block, poles, stats, ping
 ├─ lib/               db.js (Supabase + กฎกันแจ้งมั่ว) · auth.js (ล็อกอิน) · notify.js (อีเมล Resend) · mockdb.js (ทดลองในเครื่อง)
-├─ supabase/schema.sql  สร้างตาราง poles / reports / blocklist / staff_users (มีเสาทดลอง 1/1 ที่ 18.582125, 98.952782)
+├─ supabase/schema.sql  สร้างตาราง poles / reports / report_photos / blocklist / staff_users (มีเสาทดลอง 1/1 ที่ 18.582125, 98.952782)
 ├─ vercel.json        rewrites (/admin /tech) + cron กัน Supabase หลับ
 └─ dev.js             เซิร์ฟเวอร์ทดลองในเครื่อง (ไม่ต้องมี Supabase)
 ```
@@ -59,6 +59,13 @@ cd web && npm install && npm run dev
 
 ## กันแจ้งมั่ว 6 ชั้น (เหมือน Apps Script เดิม)
 ซ้ำเสาเดิม · โควตา 3 ครั้ง/เบอร์/วัน · บัญชีดำ · honeypot + ส่งเร็ว <3 วิ · ลายเซ็น QR `k` · สถานะแจ้งเท็จ + ป้ายเตือน — อยู่ใน `api/report.js`
+
+## ภาพที่ชาวบ้านแนบ (ชั่วคราว)
+- ชาวบ้านแนบภาพได้ 1 ภาพ (ไม่บังคับ) — มือถือย่อเป็น JPEG ≤1280px ก่อนส่ง (ตัดพิกัด EXIF ทิ้งด้วย) เซิร์ฟเวอร์ตรวจว่าเป็นไฟล์ภาพจริง ≤1.5 MB
+- เก็บในตาราง `report_photos` แยกจากรายการงาน · ช่าง/แอดมินกด **ดูภาพที่ผู้แจ้งแนบ** ในการ์ดงาน
+- **เปลี่ยนสถานะเป็น เสร็จสิ้น / ปิดงาน-ไม่พบปัญหา / แจ้งเท็จ → ระบบลบภาพถาวรทันที** (มีกล่องยืนยันก่อน) และบันทึกเวลาไว้ที่ `reports.photo_deleted_at`
+- หน้าแอดมินมีกล่องแจ้งเตือน "ภาพถูกลบอัตโนมัติ" ของ 7 วันล่าสุด กด **รับทราบ** แล้วซ่อนจนกว่าจะมีรายการใหม่ (จำแยกตามบัญชี/เครื่อง)
+- ระบบที่ติดตั้งไปแล้ว: รัน `supabase/schema.sql` ใหม่ทั้งไฟล์ 1 ครั้ง (รันซ้ำได้ปลอดภัย) เพื่อเพิ่มตาราง/คอลัมน์
 
 ## ข้อควรรู้
 - **Supabase Free หลับถ้าไม่ใช้ 7 วัน** → `vercel.json` มี cron เรียก `/api/ping` ทุกวัน 10:15 น. แล้ว (Vercel Hobby รองรับ cron วันละครั้ง) — ทดสอบเองได้โดยเปิด `/api/ping` ต้องเห็น `"ok":true`

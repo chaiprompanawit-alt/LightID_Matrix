@@ -48,6 +48,21 @@ function qrValid(poleId, k) {
   return !want || want === String(k || '').toLowerCase();
 }
 
+/** ภาพที่ชาวบ้านแนบ: รับ data URL (หน้าเว็บย่อขนาดเป็น JPEG ให้แล้ว) → {mime, data} หรือ null ถ้าไม่ได้แนบ
+ *  ตรวจ magic bytes จริง ไม่เชื่อ mime ที่ส่งมา */
+const MAX_PHOTO_BYTES = 1.5 * 1024 * 1024;
+function parsePhoto(dataUrl) {
+  if (!dataUrl) return null;
+  const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl));
+  if (!m) throw new Error('ไฟล์ภาพไม่ถูกต้อง กรุณาเลือกภาพใหม่ หรือส่งโดยไม่แนบภาพ');
+  const buf = Buffer.from(m[2], 'base64');
+  if (buf.length > MAX_PHOTO_BYTES) throw new Error('ภาพใหญ่เกินไป กรุณาเลือกภาพใหม่');
+  const hex = buf.subarray(0, 12).toString('hex');
+  const ok = hex.startsWith('ffd8ff') || hex.startsWith('89504e47') || (hex.startsWith('52494646') && hex.slice(16) === '57454250');
+  if (!ok) throw new Error('ไฟล์ภาพไม่ถูกต้อง กรุณาเลือกภาพใหม่ หรือส่งโดยไม่แนบภาพ');
+  return { mime: m[1], data: m[2] };
+}
+
 /** สิทธิ์ — ดู lib/auth.js (ล็อกอินรายบุคคล) */
 const { requireRole, sessionOf } = require('./auth');
 
@@ -77,4 +92,4 @@ function body(req) {
 
 module.exports = { sb, supabaseOrigin, STATUS_LIST, OPEN_STATUS, DONE_STATUS, MAX_REPORTS_PER_PHONE_PER_DAY, MIN_SECONDS_TO_SUBMIT,
   SLA_WORKING_DAYS, HOTLINE, poleSig, qrValid, sessionOf, requireRole, bkk, bkkDayKey, bkkStartOfToday, newReportId,
-  clean, digits, mooOf, body };
+  clean, digits, mooOf, body, parsePhoto };
