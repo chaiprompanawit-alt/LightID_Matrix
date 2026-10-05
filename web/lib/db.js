@@ -9,7 +9,7 @@ const DONE_STATUS = ['เสร็จสิ้น', 'ปิดงาน/ไม�
 const MAX_REPORTS_PER_PHONE_PER_DAY = 3;
 const MIN_SECONDS_TO_SUBMIT = 3;
 const SLA_WORKING_DAYS = 10;
-const HOTLINE = process.env.HOTLINE || '0-5383-7432';  // เบอร์ อบต.แม่ก๊า
+const HOTLINE = process.env.HOTLINE || '0-5383-7432 ต่อ 14';  // เบอร์ อบต.แม่ก๊า
 
 /** ทำ SUPABASE_URL ให้เหลือแค่ https://<ref>.supabase.co (ตัด /rest/v1, ช่องว่าง, "db." ที่มักคัดลอกติดมา) */
 function supabaseOrigin(raw) {
