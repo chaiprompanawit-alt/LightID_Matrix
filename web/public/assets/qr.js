@@ -25,7 +25,7 @@ QR.prepare = function () {
     fonts.push(new FontFace('MaekaSerif', 'url(/assets/fonts/noto-serif-thai-latin-' + w + '-normal.woff2) format("woff2")', { weight: String(w), unicodeRange: latin }));
   });
   var logo = new Promise(function (ok) {
-    var im = new Image(); im.onload = function () { ok(im); }; im.onerror = function () { ok(null); }; im.src = ORG.logo;
+    var im = new Image(); im.onload = function () { ok(im); }; im.onerror = function () { ok(null); }; im.src = ORG.stickerLogo || ORG.logo;
   });
   QR.ready = Promise.all([
     window.qrcode ? 0 : qrLoadScript('/assets/vendor/qrcode-generator.js'),
@@ -88,7 +88,7 @@ QR.drawBase = function (ctx, s) {
   var top = by + (bh - 13.8) / 2, cx = 45.5 * s, mw = 47 * s;
   qrText(ctx, ORG.short, 700, 3.9 * s, cx, (top + 2.44) * s, mw, '#1a1a1a');
   qrText(ctx, 'แจ้งซ่อมไฟฟ้าสาธารณะ', 700, 3.9 * s, cx, (top + 7.31) * s, mw, '#1a1a1a');
-  qrText(ctx, 'สแกน QR code หรือ โทร. ' + ORG.phone, 400, 2.6 * s, cx, (top + 12.18) * s, mw, '#333');
+  qrText(ctx, 'สแกน QR code หรือ โทร. ' + (ORG.stickerPhone || ORG.phone), 400, 2.6 * s, cx, (top + 12.18) * s, mw, '#333');
   ctx.restore();
   ctx.strokeStyle = '#c8b78a'; ctx.lineWidth = lw;
   qrRound(ctx, lw / 2, lw / 2, W - lw, H - lw, r); ctx.stroke();
