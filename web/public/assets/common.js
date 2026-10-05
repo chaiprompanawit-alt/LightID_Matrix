@@ -17,6 +17,7 @@ var ICO = {
   lock:'<path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z"/><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0"/><path d="M8 11v-4a4 4 0 1 1 8 0v4"/>',
   warn:'<path d="M12 9v4"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z"/><path d="M12 16h.01"/>',
   check:'<path d="M5 12l5 5l10 -10"/>',
+  chev:'<path d="M6 9l6 6l6 -6"/>',
   wrench:'<path d="M7 10h3v-3l-3.5 -3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1 -3 3l-6 -6a6 6 0 0 1 -8 -8l3.5 3.5"/>',
   earth:'<path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M3.6 9h16.8"/><path d="M3.6 15h16.8"/><path d="M11.5 3a17 17 0 0 0 0 18"/><path d="M12.5 3a17 17 0 0 1 0 18"/>',
   pin:'<path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"/>',
@@ -247,11 +248,14 @@ Board.render = function(){
     var opts=STATUS.map(function(s){return '<option'+(s===r.status?' selected':'')+'>'+s+'</option>';}).join('');
     var fake = r.fake_count>0 ? ' <span class="'+T.pill+' p-fake" title="เบอร์นี้เคยถูกตีเป็นแจ้งเท็จ">'+SYM['แจ้งเท็จ']+' เคยแจ้งเท็จ '+r.fake_count+' ครั้ง</span>' : '';
     var blk = (Board.onBlock && r.fake_count>0) ? ' <a href="#" onclick="Board.onBlock(\''+esc(r.reporter_phone)+'\');return false" class="text-[var(--new)] underline">บล็อกเบอร์</a>' : '';
-    return '<div class="bg-white border border-line border-l-[6px] rounded-2xl p-3.5 mb-2.5 '+c[0]+(ov?' sla-over':'')+'" id="it_'+id+'">'+
-      '<div class="flex justify-between items-start gap-2">'+
-        '<div><h3 class="m-0 text-lg font-extrabold leading-tight">เสา '+esc(r.pole_id)+'</h3>'+(mooOf(r.pole_id)?'<div class="text-sm text-muted">หมู่ '+esc(mooOf(r.pole_id))+'</div>':'')+'</div>'+
-        '<div class="flex flex-col items-end gap-1">'+pill(r.status)+'<span class="sla-tag '+T.pill+' bg-accent-soft text-accent-dark border border-accent">'+ico('warn')+'เกิน SLA '+ov+' วัน</span></div></div>'+
-      '<p class="m-0 mt-2 text-base text-ink font-semibold">'+esc(r.detail)+'</p>'+
+    var shut=Board.isCollapsed(r);
+    return '<div class="job-card bg-white border border-line border-l-[6px] rounded-2xl p-3.5 mb-2.5 '+c[0]+(ov?' sla-over':'')+(shut?' collapsed':'')+'" id="it_'+id+'">'+
+      '<div class="flex justify-between items-start gap-2 cursor-pointer select-none" onclick="Board.toggle(\''+id+'\')">'+
+        '<div class="min-w-0"><h3 class="m-0 text-lg font-extrabold leading-tight">เสา '+esc(r.pole_id)+(mooOf(r.pole_id)?' <span class="text-sm font-normal text-muted">หมู่ '+esc(mooOf(r.pole_id))+'</span>':'')+'</h3>'+
+          '<p class="m-0 mt-1 text-base text-ink font-semibold job-detail">'+esc(r.detail)+'</p></div>'+
+        '<div class="flex items-start gap-1.5 flex-none"><div class="flex flex-col items-end gap-1">'+pill(r.status)+'<span class="sla-tag '+T.pill+' bg-accent-soft text-accent-dark border border-accent">'+ico('warn')+'เกิน SLA '+ov+' วัน</span></div>'+
+          '<button type="button" class="job-chev w-8 h-8 rounded-full border border-line bg-white text-muted inline-flex items-center justify-center cursor-pointer hover:bg-paper" aria-expanded="'+(!shut)+'" title="ย่อ/ขยายการ์ด">'+ico('chev')+'</button></div></div>'+
+      '<div class="job-body">'+
       '<div class="text-sm text-muted mt-1.5 leading-relaxed">'+
         '<span class="inline-flex items-center gap-1">'+ico('clock')+fmtDT(r.created_at)+'</span> <span class="'+(isOpen?'font-bold text-ink':'')+'">('+ago(r.created_at)+'ที่แล้ว)</span>'+
         ' · <span class="font-mono text-xs bg-brand-soft text-brand px-1.5 rounded">'+esc(r.report_id)+'</span><br>'+
@@ -268,7 +272,8 @@ Board.render = function(){
       '<div class="flex flex-wrap gap-1.5 mt-1.5"><input class="'+T.input+' flex-1 min-w-[160px] py-2 text-sm" id="nt_'+id+'" placeholder="บันทึกช่าง (สาเหตุ/อะไหล่ที่เปลี่ยน)" value="'+esc(r.staff_note)+'">'+
         '<button class="'+T.btnSm+' bg-brand text-white hover:bg-brand-dark px-4" onclick="Board.save(\''+esc(r.report_id)+'\',\''+id+'\')">'+ico('save')+'บันทึก</button></div>'+
       '</div></details>'+
-    '</div>';
+      (Board.canDelete?'<div class="mt-2.5 pt-2.5 border-t border-dashed border-line flex justify-end"><button class="'+T.btnSm+' border-2 border-[var(--new)] text-[var(--new)] bg-white hover:bg-red-50" onclick="Board.del(\''+esc(r.report_id)+'\',\''+esc(r.pole_id)+'\')">'+ico('trash')+'ลบงานนี้</button></div>':'')+
+    '</div></div>';
   }).join('') || '<div class="text-center text-muted py-10"><div class="text-lg font-bold text-ink">ไม่มีรายการ</div><div class="text-sm">ลองเปลี่ยนตัวกรองสถานะหรือหมู่</div></div>';
 };
 /** มือถือ/แท็บเล็ตแนวตั้ง: เลือกดูแผนที่หรือรายการทีละอย่าง (จอกว้าง ≥1024px แสดงคู่กันเสมอ) */
@@ -278,6 +283,25 @@ Board.view=function(v){
   if(v==='map') setTimeout(function(){ Board.map.invalidateSize(); Board.fit(); },50);
 };
 Board.setStatus=function(v){ document.getElementById('f_status').value=v; Board.render(); };
+/** ย่อ/ขยายการ์ด — ค่าเริ่มต้น: งานค้างขยาย งานปิดแล้วย่อ · จำค่าที่ผู้ใช้กดไว้จนกว่าจะปิดหน้า */
+Board.fold = {};
+Board.isCollapsed = function(r){ var id=r.report_id.replace(/[^A-Za-z0-9]/g,''); return id in Board.fold ? Board.fold[id] : OPEN_STATUS.indexOf(r.status)<0; };
+Board.toggle = function(id){
+  var el=document.getElementById('it_'+id); if(!el) return;
+  var shut=!el.classList.contains('collapsed'); Board.fold[id]=shut;
+  el.classList.toggle('collapsed',shut); el.querySelector('.job-chev').setAttribute('aria-expanded',String(!shut));
+};
+Board.foldAll = function(shut){
+  document.querySelectorAll('#list .job-card').forEach(function(el){ var id=el.id.slice(3); Board.fold[id]=shut; el.classList.toggle('collapsed',shut); el.querySelector('.job-chev').setAttribute('aria-expanded',String(!shut)); });
+};
+/** ลบงานถาวร (แอดมินเท่านั้น) — ใช้กับงานที่บันทึกผิด/ซ้ำ/ทดสอบ */
+Board.del = async function(rid,pole){
+  var t=prompt('ลบงาน '+rid+' (เสา '+pole+') ถาวร?\nข้อมูลและภาพที่แนบจะหายทั้งหมด กู้คืนไม่ได้ และไม่นับในรายงาน\n\nพิมพ์เลขเสา "'+pole+'" เพื่อยืนยัน');
+  if (t===null) return;
+  if (t.trim()!==pole) { alert('เลขเสาไม่ตรง — ยกเลิกการลบ'); return; }
+  try { await api('/api/reports?id='+encodeURIComponent(rid),{method:'DELETE'}); await Board.load(); }
+  catch(e){ alert('ลบไม่สำเร็จ: '+e.message); }
+};
 Board.save = async function(rid,id){
   var st=document.getElementById('st_'+id).value, r=Board.data.filter(function(x){ return x.report_id===rid; })[0];
   if (r && r.has_photo && OPEN_STATUS.indexOf(st)<0 &&
@@ -328,7 +352,8 @@ Board.html = function(){
     '<select id="f_moo" class="'+sel+'" onchange="Board.render()" aria-label="กรองหมู่"><option value="">ทุกหมู่</option></select>'+
     '<input id="f_q" class="'+sel+' min-w-[180px]" placeholder="ค้นเลขเสา / ชื่อ / เบอร์ / เลขที่" oninput="Board.render()" aria-label="ค้นหา">'+
     '<label class="text-sm text-muted flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="size-4 accent-brand" onchange="Board.filter.mine=this.checked;Board.render()"> งานของฉัน</label>'+
-    '<button class="'+T.btnOut+'" onclick="Board.load()">'+ico('refresh')+'รีเฟรช</button><span class="text-sm text-muted" id="f_count"></span></div>'+
+    '<button class="'+T.btnOut+'" onclick="Board.load()">'+ico('refresh')+'รีเฟรช</button>'+
+    '<button class="'+T.btnOut+'" onclick="Board.foldAll(true)" title="ย่อการ์ดทั้งหมด">'+ico('chev','rotate-180')+'ย่อทั้งหมด</button><button class="'+T.btnOut+'" onclick="Board.foldAll(false)" title="ขยายการ์ดทั้งหมด">'+ico('chev')+'ขยายทั้งหมด</button><span class="text-sm text-muted" id="f_count"></span></div>'+
     '<div id="viewToggle" class="noprint px-3 pb-2"><div class="flex rounded-[10px] border border-line overflow-hidden text-sm font-semibold"><button class="flex-1 py-2 inline-flex items-center justify-center gap-1.5 bg-white text-muted" onclick="Board.view(\'map\')">'+ico('map')+'แผนที่</button><button class="flex-1 py-2 inline-flex items-center justify-center gap-1.5 bg-brand text-white" onclick="Board.view(\'list\')">'+ico('list')+'รายการ</button></div></div>'+
     '<div id="board" class="board-list flex flex-wrap gap-3 px-3 pb-3"><div id="map" class="flex-[1_1_380px] h-[40vh] min-h-[260px] lg:h-[65vh] lg:min-h-[380px] rounded-2xl border border-line"></div><div class="flex-[1_1_420px] lg:max-h-[65vh] lg:overflow-auto" id="list"></div></div>';
 };

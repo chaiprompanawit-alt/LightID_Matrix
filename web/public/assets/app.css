@@ -44,3 +44,8 @@ button, select, input:not([type=checkbox]), a[class*="rounded"]{ min-height:44px
 @media print{ .noprint{display:none!important} body{background:#fff!important} .print-break{page-break-inside:avoid} }
 
 .brand-ic{ width:18px; height:18px; flex:none; }
+.job-card.collapsed .job-body{ display:none; }
+.job-card.collapsed .job-detail{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.job-card.collapsed{ padding-top:.6rem; padding-bottom:.6rem; }
+.job-chev .ic{ transition:transform .15s; }
+.job-card:not(.collapsed) .job-chev .ic{ transform:rotate(180deg); }
