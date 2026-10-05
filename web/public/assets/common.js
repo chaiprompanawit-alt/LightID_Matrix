@@ -17,6 +17,7 @@ var ICO = {
   lock:'<path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z"/><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0"/><path d="M8 11v-4a4 4 0 1 1 8 0v4"/>',
   warn:'<path d="M12 9v4"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z"/><path d="M12 16h.01"/>',
   check:'<path d="M5 12l5 5l10 -10"/>',
+  wrench:'<path d="M7 10h3v-3l-3.5 -3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1 -3 3l-6 -6a6 6 0 0 1 -8 -8l3.5 3.5"/>',
   earth:'<path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M3.6 9h16.8"/><path d="M3.6 15h16.8"/><path d="M11.5 3a17 17 0 0 0 0 18"/><path d="M12.5 3a17 17 0 0 1 0 18"/>',
   pin:'<path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"/>',
   refresh:'<path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>',
@@ -36,6 +37,14 @@ var ICO = {
   edit:'<path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/><path d="M16 5l3 3"/>'
 };
 function ico(n, cls){ return '<svg class="ic '+(cls||'')+'" viewBox="0 0 24 24" aria-hidden="true">'+ICO[n]+'</svg>'; }
+/** โลโก้ Google Maps / Google Earth แบบย่อ (สีเต็ม วาดในวงกลมขาว ให้เห็นชัดทั้งบนปุ่มน้ำเงินและปุ่มขาว) */
+var BRAND = {
+  gmaps:'<svg class="brand-ic" viewBox="0 0 24 24" aria-hidden="true"><defs><clipPath id="gmPin"><path d="M12 1.5a7.5 7.5 0 0 0-7.5 7.5c0 5.6 7.5 13.5 7.5 13.5s7.5-7.9 7.5-13.5A7.5 7.5 0 0 0 12 1.5z"/></clipPath></defs>'+
+    '<g clip-path="url(#gmPin)"><rect width="24" height="24" fill="#34A853"/><path d="M0 0h24L0 18z" fill="#FBBC04"/><path d="M0 0h13L0 13z" fill="#4285F4"/><path d="M8 0h16v9z" fill="#EA4335"/></g><circle cx="12" cy="9" r="2.8" fill="#fff"/></svg>',
+  earth:'<svg class="brand-ic" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="geG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6FB8FF"/><stop offset="1" stop-color="#1A57C9"/></linearGradient></defs>'+
+    '<circle cx="12" cy="12" r="10.5" fill="url(#geG)"/><path d="M3.2 14.5c4-3.6 10.5-5.6 17.5-4.4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M5 18.5c3.8-2.3 8.6-3.2 13.6-2.6" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.6" stroke-linecap="round"/></svg>'
+};
+function brand(n){ return '<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white flex-none">'+BRAND[n]+'</span>'; }
 /** pill สถานะ = สี + สัญลักษณ์ + ข้อความ */
 function pill(status, extra){ var c=CLS[status]||['','','']; return '<span class="'+T.pill+' '+c[1]+' '+(extra||'')+'"><span aria-hidden="true">'+(SYM[status]||'')+'</span>'+esc(status)+'</span>'; }
 /** จำนวนวันที่เกิน SLA (0 = ยังไม่เกิน / งานปิดแล้ว) นับวันปฏิทินโดยประมาณ */
@@ -76,7 +85,7 @@ function earthKml(lat,lng,poleId){
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(function(){ URL.revokeObjectURL(a.href); },5000);
 }
-function earthBtn(r,cls){ return '<button type="button" class="'+cls+'" title="ดาวน์โหลดไฟล์ .kml แล้วดับเบิลคลิกเพื่อเปิดใน Google Earth Pro" onclick="earthKml('+(+r.lat)+','+(+r.lng)+',this.dataset.p)" data-p="'+esc(r.pole_id)+'">'+ico('earth')+'Google Earth</button>'; }
+function earthBtn(r,cls){ return '<button type="button" class="'+cls+'" title="ดาวน์โหลดไฟล์ .kml แล้วดับเบิลคลิกเพื่อเปิดใน Google Earth Pro" onclick="earthKml('+(+r.lat)+','+(+r.lng)+',this.dataset.p)" data-p="'+esc(r.pole_id)+'">'+brand('earth')+'Google Earth</button>'; }
 function ago(iso){ var h=(Date.now()-new Date(iso))/36e5; if(h<1) return Math.round(h*60)+' นาที'; if(h<48) return Math.round(h)+' ชม.'; return Math.round(h/24)+' วัน'; }
 
 /* ---------- PWA: ติดตั้งเป็นแอปบนมือถือ/แท็บเล็ต/คอม ---------- */
@@ -134,11 +143,13 @@ function renderGate(rootId, title, onOk){
   document.getElementById('lg_p').onkeydown=function(e){ if(e.key==='Enter') go(); };
 }
 /** แถบบนสุด: ชื่อระบบ + ผู้ใช้ + ออกจากระบบ */
-function topbarHtml(title, extra){
+function topbarHtml(title, extra, mode){
   var me=Auth.get()||{};
-  return '<header class="noprint sticky top-0 z-[1000] bg-brand text-white px-3 md:px-4 py-2 flex items-center justify-between gap-2">'+
+  var adm = mode==='admin';   // แอดมิน = แถบสีม่วงตามตรา อบต. · ช่าง = แถบน้ำเงิน
+  var badge = '<span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-extrabold tracking-wide '+(adm?'bg-white text-[#4a2577]':'bg-accent text-ink')+'">'+ico(adm?'lock':'wrench')+(adm?'โหมดแอดมิน':'โหมดช่าง')+'</span>';
+  return '<header class="noprint sticky top-0 z-[1000] '+(adm?'bg-[#4a2577]':'bg-brand')+' text-white px-3 md:px-4 py-2 flex items-center justify-between gap-2">'+
     '<div class="flex items-center gap-2.5 min-w-0"><img src="'+ORG.logo+'" alt="" class="h-9 w-9 rounded-full bg-white object-cover flex-none" onerror="this.remove()">'+
-    '<div class="min-w-0 leading-tight"><h1 class="text-sm sm:text-base md:text-lg font-extrabold m-0 leading-tight">'+title+'</h1><div class="text-xs opacity-85 hidden sm:block">'+esc(ORG.short)+' · '+esc(ORG.dept)+'</div></div></div>'+
+    '<div class="min-w-0 leading-tight"><h1 class="text-sm sm:text-base md:text-lg font-extrabold m-0 leading-tight flex items-center gap-2 flex-wrap">'+title+badge+'</h1><div class="text-xs opacity-85 hidden sm:block">'+esc(ORG.short)+' · '+esc(ORG.dept)+'</div></div></div>'+
     '<div class="flex items-center gap-1.5 md:gap-2 text-sm flex-none">'+(extra||'')+
     '<span class="hidden sm:inline-flex items-center gap-1 opacity-90">'+ico('user')+esc(me.name||'')+' <span class="opacity-70">('+(me.role==='admin'?'แอดมิน':'ช่าง')+')</span></span>'+
     '<button onclick="Auth.clear()" class="bg-white/15 hover:bg-white/25 rounded-[10px] px-2.5 py-1 cursor-pointer">ออกจากระบบ</button></div></header>';
@@ -223,7 +234,7 @@ Board.render = function(){
       var m=L.circleMarker([+r.lat,+r.lng],{radius:ov?12:10,color:ov?'#f2b632':'#fff',weight:ov?4:2,fillColor:c,fillOpacity:.95});
       m.bindPopup('<b class="text-base">เสา '+esc(r.pole_id)+'</b> '+pill(r.status)+(ov?' <span class="'+T.pill+' bg-accent-soft text-accent-dark border border-accent">เกิน SLA '+ov+' วัน</span>':'')+'<br>'+esc(r.detail)+
         '<br><span class="text-xs text-muted">ห่างจาก '+esc(ORG.short)+' ~'+fromHome(r.lat,r.lng)+' (เส้นตรง)</span>'+
-        '<br><a class="'+T.btnSm+' bg-brand text-white mt-1.5" style="color:#fff" href="'+gmaps(r.lat,r.lng)+'" target="_blank" rel="noopener">'+ico('nav')+'นำทางจาก '+esc(ORG.short)+'</a> '+earthBtn(r,T.btnSm+' border border-brand text-brand bg-white mt-1.5'));
+        '<br><a class="'+T.btnSm+' bg-brand text-white mt-1.5" style="color:#fff" href="'+gmaps(r.lat,r.lng)+'" target="_blank" rel="noopener">'+brand('gmaps')+'นำทางจาก '+esc(ORG.short)+'</a> '+earthBtn(r,T.btnSm+' border border-brand text-brand bg-white mt-1.5'));
       Board.markers.addLayer(m); pts.push([+r.lat,+r.lng]);
     }
   });
@@ -232,7 +243,7 @@ Board.render = function(){
 
   document.getElementById('list').innerHTML = rows.map(function(r){
     var c=CLS[r.status]||['','',''], id=r.report_id.replace(/[^A-Za-z0-9]/g,''), ov=slaOver(r), isOpen=OPEN_STATUS.indexOf(r.status)>=0;
-    var nav=(r.lat&&r.lng)?'<a class="'+T.btn+' py-2 flex-1 sm:flex-none" href="'+gmaps(r.lat,r.lng)+'" target="_blank" rel="noopener">'+ico('nav')+'นำทาง</a>'+earthBtn(r,T.btnOut+' py-2'):'<span class="text-sm text-muted self-center">ไม่มีพิกัด</span>';
+    var nav=(r.lat&&r.lng)?'<a class="'+T.btn+' py-2 flex-1 sm:flex-none" href="'+gmaps(r.lat,r.lng)+'" target="_blank" rel="noopener">'+brand('gmaps')+'นำทาง Google Maps</a>'+earthBtn(r,T.btnOut+' py-2'):'<span class="text-sm text-muted self-center">ไม่มีพิกัด</span>';
     var opts=STATUS.map(function(s){return '<option'+(s===r.status?' selected':'')+'>'+s+'</option>';}).join('');
     var fake = r.fake_count>0 ? ' <span class="'+T.pill+' p-fake" title="เบอร์นี้เคยถูกตีเป็นแจ้งเท็จ">'+SYM['แจ้งเท็จ']+' เคยแจ้งเท็จ '+r.fake_count+' ครั้ง</span>' : '';
     var blk = (Board.onBlock && r.fake_count>0) ? ' <a href="#" onclick="Board.onBlock(\''+esc(r.reporter_phone)+'\');return false" class="text-[var(--new)] underline">บล็อกเบอร์</a>' : '';

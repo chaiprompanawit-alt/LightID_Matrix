@@ -42,3 +42,5 @@ button, select, input:not([type=checkbox]), a[class*="rounded"]{ min-height:44px
 #installBar{ position:fixed; left:0; right:0; bottom:0; z-index:1100; padding-bottom:env(safe-area-inset-bottom); }
 
 @media print{ .noprint{display:none!important} body{background:#fff!important} .print-break{page-break-inside:avoid} }
+
+.brand-ic{ width:18px; height:18px; flex:none; }
