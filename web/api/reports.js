@@ -1,7 +1,7 @@
 // GET /api/reports?from=ISO&to=ISO  (ช่าง/แอดมิน) → รายการทั้งหมด ใหม่สุดอยู่บน + จำนวนครั้งที่เบอร์เคยแจ้งเท็จ
 const { sb, requireRole, digits } = require('../lib/db');
 module.exports = async (req, res) => {
-  if (!requireRole(req, res, ['admin', 'tech'])) return;
+  if (!(await requireRole(req, res, ['admin', 'tech']))) return;
   let q = sb().from('reports').select('*').order('created_at', { ascending: false }).limit(3000);
   if (req.query.from) q = q.gte('created_at', req.query.from);
   if (req.query.to) q = q.lte('created_at', req.query.to);

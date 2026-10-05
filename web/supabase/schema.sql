@@ -33,6 +33,10 @@ create table if not exists reports (
 create index if not exists reports_pole_status_idx on reports (pole_id, status);
 create index if not exists reports_phone_created_idx on reports (reporter_phone, created_at desc);
 create index if not exists reports_created_idx on reports (created_at desc);
+-- 1 เสามีงานค้างได้แค่ 1 งาน — ให้ฐานข้อมูลบังคับเอง กันการยิงแจ้งพร้อมกันหลายคำขอ (โค้ดตรวจซ้ำก่อน insert แต่ไม่ทันกัน)
+-- ถ้าสร้างไม่ผ่านเพราะมีงานค้างซ้ำอยู่แล้ว: ปิดงานที่ซ้ำในหน้าแอดมินให้เหลือเสาละ 1 งาน แล้วรันใหม่
+create unique index if not exists reports_one_open_per_pole on reports (pole_id)
+  where status in ('แจ้งใหม่','รับเรื่องแล้ว','กำลังดำเนินการ');
 
 -- ---------- ภาพที่ชาวบ้านแนบ (ชั่วคราว: ลบอัตโนมัติเมื่อปิดงาน) ----------
 -- รันไฟล์นี้ซ้ำได้ปลอดภัย (if not exists) — ระบบที่ติดตั้งไปแล้วให้รันใหม่ทั้งไฟล์เพื่อเพิ่มส่วนนี้
@@ -78,3 +82,5 @@ create table if not exists staff_users (
   last_login    timestamptz
 );
 alter table staff_users enable row level security;
+-- เลขรุ่น session: เพิ่มเมื่อเปลี่ยนสิทธิ์/ปิดบัญชี/เปลี่ยนรหัส → token ที่ออกก่อนหน้าใช้ไม่ได้ทันที
+alter table staff_users add column if not exists token_version integer not null default 0;

@@ -1,7 +1,7 @@
 // บัญชีดำเบอร์โทร — GET รายการ / POST {phone, reason} บล็อก / DELETE ?phone= ปลดบล็อก (แอดมินเท่านั้น)
 const { sb, requireRole, body, digits, clean } = require('../lib/db');
 module.exports = async (req, res) => {
-  if (!requireRole(req, res, ['admin'])) return;
+  if (!(await requireRole(req, res, ['admin']))) return;
   const db = sb();
   if (req.method === 'GET') {
     const { data, error } = await db.from('blocklist').select('*').order('blocked_at', { ascending: false });

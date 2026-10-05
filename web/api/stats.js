@@ -66,7 +66,7 @@ function summarize(rows) {
 }
 
 module.exports = async (req, res) => {
-  if (!requireRole(req, res, ['admin'])) return;
+  if (!(await requireRole(req, res, ['admin']))) return;
   const period = req.query.period === 'month' ? 'month' : 'week';
   const cur = range(period, req.query.date), prev = prevRange(period, cur);
   const db = sb();

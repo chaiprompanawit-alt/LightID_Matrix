@@ -10,16 +10,16 @@ function qrBase(req) {
 }
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
-    if (!requireRole(req, res, ['admin', 'tech'])) return;
+    if (!(await requireRole(req, res, ['admin', 'tech']))) return;
     const { data, error } = await sb().from('poles').select('*').order('pole_id').limit(5000);
     if (error) return res.status(500).json({ error: error.message });
     if (req.query.qr) {   // หน้าสร้างสติกเกอร์: ส่งลายเซ็น k ของแต่ละต้น (QR_SECRET ไม่ออกจากเซิร์ฟเวอร์)
-      if (!requireRole(req, res, ['admin'])) return;
+      if (!(await requireRole(req, res, ['admin']))) return;
       return res.json({ base: qrBase(req) + '/', signed: !!poleSig('x'), rows: data.map(p => ({ pole_id: p.pole_id, k: poleSig(p.pole_id) })) });
     }
     return res.json(data);
   }
-  if (!requireRole(req, res, ['admin'])) return;
+  if (!(await requireRole(req, res, ['admin']))) return;
   const rows = (body(req).rows || []).map(r => ({
     pole_id: clean(r.pole_id, 20), zone: clean(r.zone, 10), address: clean(r.address, 200),
     lat: parseFloat(r.lat) || null, lng: parseFloat(r.lng) || null, note: clean(r.note, 200)

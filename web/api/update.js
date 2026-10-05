@@ -1,7 +1,7 @@
 // POST /api/update {report_id, status, assigned_to, staff_note} (ช่าง/แอดมิน)
 const { sb, requireRole, body, STATUS_LIST, OPEN_STATUS, DONE_STATUS, clean } = require('../lib/db');
 module.exports = async (req, res) => {
-  const me = requireRole(req, res, ['admin', 'tech']); if (!me) return;
+  const me = await requireRole(req, res, ['admin', 'tech']); if (!me) return;
   const p = body(req);
   if (!p.report_id) return res.status(400).json({ error: 'ไม่มี report_id' });
   if (p.status && !STATUS_LIST.includes(p.status)) return res.status(400).json({ error: 'สถานะไม่ถูกต้อง' });
@@ -31,6 +31,7 @@ module.exports = async (req, res) => {
     }
   }
   const { error } = await sb().from('reports').update(patch).eq('report_id', p.report_id);
+  if (error && error.code === '23505') return res.status(409).json({ error: 'เปิดงานนี้กลับไม่ได้ เพราะเสาต้นนี้มีงานค้างอีกรายการอยู่แล้ว' });
   if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true, photo_deleted: photoDeleted });
 };

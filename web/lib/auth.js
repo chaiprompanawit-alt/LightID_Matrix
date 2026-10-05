@@ -24,7 +24,7 @@ function verifyPassword(pw, stored) {
 
 /** ออก session token: base64url(payload).signature */
 function issueToken(user) {
-  const payload = { u: user.username, n: user.display_name, r: user.role, exp: Date.now() + SESSION_HOURS * 3600e3 };
+  const payload = { u: user.username, n: user.display_name, r: user.role, v: user.token_version || 0, exp: Date.now() + SESSION_HOURS * 3600e3 };
   const p = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const sig = crypto.createHmac('sha256', secret()).update(p).digest('base64url');
   return p + '.' + sig;
@@ -38,18 +38,26 @@ function verifyToken(token) {
     if (want.length !== sig.length || !crypto.timingSafeEqual(Buffer.from(want), Buffer.from(sig))) return null;
     const d = JSON.parse(Buffer.from(p, 'base64url').toString());
     if (!d.exp || d.exp < Date.now()) return null;
-    return { username: d.u, name: d.n, role: d.r };
+    return { username: d.u, name: d.n, role: d.r, v: d.v || 0 };
   } catch { return null; }
 }
 
-/** อ่าน session จาก header Authorization: Bearer <token> */
-function sessionOf(req) {
+/** อ่าน session จาก header Authorization: Bearer <token> แล้วเทียบกับสถานะบัญชีปัจจุบันใน staff_users ทุกครั้ง
+ *  → ลบ/ปิดบัญชี/เปลี่ยนสิทธิ์/เปลี่ยนรหัส มีผลทันที (token_version ในฐานข้อมูลถูกเพิ่ม token เก่าจึงใช้ไม่ได้)
+ *  บัญชี admin หลัก (ADMIN_TOKEN) ไม่มีแถวในฐานข้อมูล — เพิกถอนโดยเปลี่ยน SESSION_SECRET */
+async function sessionOf(req) {
   const h = req.headers['authorization'] || '';
-  return verifyToken(h.replace(/^Bearer\s+/i, '').trim());
+  const t = verifyToken(h.replace(/^Bearer\s+/i, '').trim());
+  if (!t || t.username === 'admin') return t;
+  const { data } = await require('./db').sb().from('staff_users')
+    .select('username,display_name,role,active,token_version').eq('username', t.username).maybeSingle();
+  if (!data || !data.active || (data.token_version || 0) !== t.v) return null;
+  return { username: data.username, name: data.display_name, role: data.role, v: t.v };
 }
-/** ใช้ต้น API: คืน session หรือตอบ 401 แล้วคืน null */
-function requireRole(req, res, roles) {
-  const s = sessionOf(req);
+/** ใช้ต้น API: คืน session หรือตอบ 401 แล้วคืน null
+ *  ※ เป็น async — ต้องเรียกแบบ `if (!(await requireRole(...))) return;` เสมอ (ลืม await = Promise เป็นจริงเสมอ = ไม่ได้ตรวจสิทธิ์) */
+async function requireRole(req, res, roles) {
+  const s = await sessionOf(req);
   if (!s || (roles && !roles.includes(s.role))) { res.status(401).json({ error: 'unauthorized' }); return null; }
   return s;
 }

@@ -42,7 +42,7 @@
     setInterval(function(){ Board.load().catch(function(){}); }, 120000);
   }
   async function changePw(){
-    try { await api('/api/me',{method:'POST',body:{old_password:document.getElementById('pw_o').value,new_password:document.getElementById('pw_n').value}}); alert('เปลี่ยนรหัสผ่านแล้ว'); }
+    try { var j = await api('/api/me',{method:'POST',body:{old_password:document.getElementById('pw_o').value,new_password:document.getElementById('pw_n').value}}); if (j && j.token) Auth.set(Object.assign(Auth.get(), {token:j.token})); alert('เปลี่ยนรหัสผ่านแล้ว — เครื่องอื่นที่ล็อกอินไว้จะถูกออกจากระบบ'); }
     catch(e){ alert(e.message); }
   }
   if (Auth.get()) start(); else renderGate('root', 'เข้าสู่ระบบช่างไฟ', start);
