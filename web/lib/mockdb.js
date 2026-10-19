@@ -26,10 +26,11 @@ const PK = { poles: 'pole_id', reports: 'report_id', report_photos: 'report_id',
 })();
 
 function q(table) {
-  const st = { f: [], order: null, limit: null, head: false, count: false, single: false };
+  const st = { f: [], order: null, limit: null, from: 0, head: false, count: false, single: false };
   const apply = () => {
     let rows = tables[table].filter(r => st.f.every(fn => fn(r)));
     if (st.order) rows.sort((a, b) => (a[st.order.col] > b[st.order.col] ? 1 : -1) * (st.order.asc ? 1 : -1));
+    if (st.from) rows = rows.slice(st.from);
     if (st.limit) rows = rows.slice(0, st.limit);
     return rows;
   };
@@ -43,6 +44,7 @@ function q(table) {
     lt(c, v) { st.f.push(r => r[c] < v); return b; },
     order(c, o) { st.order = { col: c, asc: !o || o.ascending !== false }; return b; },
     limit(n) { st.limit = n; return b; },
+    range(a, z) { st.from = a; st.limit = z - a + 1; return b; },
     maybeSingle() { st.single = true; return b; },
     insert(row) { const rows = [].concat(row).map(r => ({ created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...r })); if (rows.some(r => openConflict(table, r))) return done(null, DUP); tables[table].push(...rows); return done(rows); },
     upsert(row) { [].concat(row).forEach(r => { const i = tables[table].findIndex(x => x[PK[table]] === r[PK[table]]); if (i >= 0) Object.assign(tables[table][i], r); else tables[table].push({ created_at: new Date().toISOString(), ...r }); }); return done(null); },

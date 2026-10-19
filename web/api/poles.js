@@ -11,8 +11,14 @@ function qrBase(req) {
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
     if (!(await requireRole(req, res, ['admin', 'tech']))) return;
-    const { data, error } = await sb().from('poles').select('*').order('pole_id').limit(5000);
-    if (error) return res.status(500).json({ error: error.message });
+    // Supabase ตัดผลลัพธ์ที่ 1,000 แถวเสมอ (limit() ไม่เกิน) → ดึงเป็นหน้าๆ จนครบ ไม่งั้นเสาท้ายตาราง (เช่น ม.9) หาย
+    const data = [];
+    for (let from = 0; ; from += 1000) {
+      const { data: page, error } = await sb().from('poles').select('*').order('pole_id').range(from, from + 999);
+      if (error) return res.status(500).json({ error: error.message });
+      data.push(...page);
+      if (page.length < 1000) break;
+    }
     if (req.query.qr) {   // หน้าสร้างสติกเกอร์: ส่งลายเซ็น k ของแต่ละต้น (QR_SECRET ไม่ออกจากเซิร์ฟเวอร์)
       if (!(await requireRole(req, res, ['admin']))) return;
       return res.json({ base: qrBase(req) + '/', signed: !!poleSig('x'), rows: data.map(p => ({ pole_id: p.pole_id, k: poleSig(p.pole_id) })) });
